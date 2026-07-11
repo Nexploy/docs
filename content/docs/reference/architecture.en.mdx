@@ -1,0 +1,45 @@
+---
+title: Architecture
+description: Technical overview for contributors and advanced users
+---
+
+For contributors and advanced users.
+
+## Stack
+
+| Layer | Technologies |
+|---|---|
+| Frontend | Next.js 16, React 19, Tailwind CSS, shadcn/ui, Zustand |
+| Backend | Next.js Server Actions, Hono.js, Prisma 7, PostgreSQL |
+| Auth | Better Auth (email, OAuth, 2FA, API keys) |
+| Jobs | Inngest (resumable pipeline) |
+| AI | Multi-provider AI SDK + MCP |
+| Infra | Docker, Traefik, SSE, WebSocket |
+
+## Deployment flow
+
+```
+Git Push → Webhook → Inngest pipeline → Docker API → Container + Traefik route
+```
+
+## Real-time flow
+
+```
+Docker events → State Manager → SSE → Zustand store → React interface
+```
+
+## Monorepo structure
+
+```
+nexploy/
+├── apps/
+│   ├── nexploy/       # Next.js app — UI, orchestration
+│   └── docker-api/    # Hono.js API — Docker operations
+├── packages/
+│   ├── ui/            # Shared shadcn/ui components
+│   ├── schemas-zod/   # Zod validation schemas
+│   ├── i18n/          # Translations (en, fr)
+│   └── ...
+└── infra/
+    └── traefik/       # Routing and SSL config
+```

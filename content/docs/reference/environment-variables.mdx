@@ -1,0 +1,21 @@
+---
+title: Variables d'environnement
+description: Référence des variables d'environnement de Nexploy
+---
+
+| Variable | Rôle |
+|---|---|
+| `DATABASE_URL` | Chaîne de connexion PostgreSQL |
+| `ENCRYPTION_KEY` | Clé de chiffrement AES-256-CBC (32 octets hex) des variables d'env |
+| `BETTER_AUTH_SECRET` | Secret d'authentification |
+| `BETTER_AUTH_URL` | URL publique de l'application |
+| `INNGEST_EVENT_KEY` | Clé d'événement Inngest |
+| `INNGEST_SIGNING_KEY` | Clé de signature Inngest |
+| `LOG_LEVEL` | Niveau de log (ex. `info`) |
+
+<Callout>La liste complète est disponible dans `.env.example`.</Callout>
+
+<Callout type="warn" title="Conservez précieusement votre ENCRYPTION_KEY">
+  Elle sert à déchiffrer vos variables d'environnement. Sa perte rend vos
+  secrets irrécupérables.
+</Callout>

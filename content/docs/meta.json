@@ -1,0 +1,13 @@
+{
+  "pages": [
+    "index",
+    "getting-started",
+    "core-concepts",
+    "pipelines",
+    "docker",
+    "networking",
+    "features",
+    "security",
+    "reference"
+  ]
+}

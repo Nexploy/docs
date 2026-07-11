@@ -1,0 +1,16 @@
+---
+title: Environments (Docker hosts)
+description: Drive multiple Docker hosts
+---
+
+An **environment** represents a Docker host to deploy to. Nexploy can drive multiple hosts.
+
+## Connection types
+
+| Type | Description |
+|---|---|
+| **Local** | Local Docker socket of the host machine |
+| **TCP** | Connection to a remote Docker daemon over TCP |
+| **SSH** | Connection to a remote host over SSH |
+
+This lets you separate your environments (e.g. *staging* and *production*) and target the desired host in your pipelines via the `set-environment` node.

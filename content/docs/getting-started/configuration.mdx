@@ -1,0 +1,26 @@
+---
+title: Configuration
+description: Variables d'environnement principales et premier démarrage
+---
+
+## Variables d'environnement principales
+
+| Variable | Rôle |
+|---|---|
+| `DATABASE_URL` | Chaîne de connexion PostgreSQL |
+| `ENCRYPTION_KEY` | Clé de chiffrement AES-256-CBC (32 octets hex) des variables d'env |
+| `BETTER_AUTH_SECRET` | Secret d'authentification |
+| `BETTER_AUTH_URL` | URL publique de l'application |
+| `INNGEST_EVENT_KEY` | Clé d'événement Inngest |
+| `INNGEST_SIGNING_KEY` | Clé de signature Inngest |
+| `LOG_LEVEL` | Niveau de log (ex. `info`) |
+
+<Callout>La liste complète est disponible dans `.env.example`.</Callout>
+
+## Premier démarrage
+
+Au premier lancement, créez votre compte administrateur via l'interface web. Vous pourrez ensuite :
+
+1. Connecter un **provider Git** (GitHub ou GitLab).
+2. Configurer un ou plusieurs **environnements** (hôtes Docker).
+3. Créer votre premier **dépôt** à déployer.

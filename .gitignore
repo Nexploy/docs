@@ -1,22 +1,27 @@
 # Dependencies
 /node_modules
 
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+
+# Fumadocs MDX generated files
+.source
+
 # Production
 /build
 
-# Generated files
-.docusaurus
-.cache-loader
-
 # Misc
 .DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+*.pem
 
+# Debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Env
+.env*.local
 
 .idea

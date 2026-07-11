@@ -1,0 +1,21 @@
+---
+title: Environment variables
+description: Reference of Nexploy environment variables
+---
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `ENCRYPTION_KEY` | AES-256-CBC encryption key (32 hex bytes) for env variables |
+| `BETTER_AUTH_SECRET` | Authentication secret |
+| `BETTER_AUTH_URL` | Public URL of the application |
+| `INNGEST_EVENT_KEY` | Inngest event key |
+| `INNGEST_SIGNING_KEY` | Inngest signing key |
+| `LOG_LEVEL` | Log level (e.g. `info`) |
+
+<Callout>The full list is available in `.env.example`.</Callout>
+
+<Callout type="warn" title="Keep your ENCRYPTION_KEY safe">
+  It is used to decrypt your environment variables. Losing it makes your secrets
+  unrecoverable.
+</Callout>

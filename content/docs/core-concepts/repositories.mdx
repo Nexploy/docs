@@ -1,0 +1,31 @@
+---
+title: Dépôts (Repositories)
+description: Une application à déployer depuis un dépôt Git
+---
+
+Un **dépôt** représente une application à déployer depuis un dépôt Git.
+
+## Créer un dépôt
+
+1. Choisissez le provider Git et le dépôt source.
+2. Sélectionnez la branche à suivre.
+3. Configurez le **Dockerfile** (chemin) ou un **docker-compose**.
+4. Ajoutez vos **variables d'environnement** (chiffrées).
+5. Définissez le **domaine** et le routage Traefik.
+
+## Cycle de vie d'un build
+
+Chaque déploiement passe par les statuts suivants :
+
+```
+QUEUED → BUILDING → DEPLOYING → COMPLETED
+                              ↘ FAILED / CANCELLED
+```
+
+Les builds sont **résumables** : en cas d'échec, la reprise repart de la dernière étape réussie.
+
+## Variables d'environnement
+
+- Ajoutées par dépôt, **chiffrées au repos**.
+- Injectées dans un fichier `.env` au moment du build.
+- Jamais exposées en clair dans l'interface après enregistrement.

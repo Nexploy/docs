@@ -1,0 +1,15 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+/* Ensure Fumadocs UI styles are picked up by Tailwind. */
+@source '../node_modules/fumadocs-ui/dist/**/*.js';
+
+/* Brand palette aligned with the marketing site (blue primary). */
+:root {
+  --color-fd-primary: #2563eb;
+}
+
+.dark {
+  --color-fd-primary: #3b82f6;
+}

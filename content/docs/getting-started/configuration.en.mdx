@@ -1,0 +1,26 @@
+---
+title: Configuration
+description: Main environment variables and first launch
+---
+
+## Main environment variables
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `ENCRYPTION_KEY` | AES-256-CBC encryption key (32 hex bytes) for env variables |
+| `BETTER_AUTH_SECRET` | Authentication secret |
+| `BETTER_AUTH_URL` | Public URL of the application |
+| `INNGEST_EVENT_KEY` | Inngest event key |
+| `INNGEST_SIGNING_KEY` | Inngest signing key |
+| `LOG_LEVEL` | Log level (e.g. `info`) |
+
+<Callout>The full list is available in `.env.example`.</Callout>
+
+## First launch
+
+On first launch, create your administrator account through the web interface. You can then:
+
+1. Connect a **Git provider** (GitHub or GitLab).
+2. Configure one or more **environments** (Docker hosts).
+3. Create your first **repository** to deploy.

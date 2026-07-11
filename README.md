@@ -1,41 +1,28 @@
-# Website
+# Documentation Nexploy
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+Site de documentation de [Nexploy](https://nexploy.app), construit avec [Fumadocs](https://fumadocs.dev) et Next.js (App Router).
 
-## Installation
-
-```bash
-yarn
-```
-
-## Local Development
+## Développement
 
 ```bash
-yarn start
+pnpm install
+pnpm dev
 ```
 
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
+Le site est servi sur http://localhost:3004.
+
+## Structure
+
+- `content/docs/` — le contenu de la documentation (MDX). L'ordre et les titres des dossiers sont pilotés par les fichiers `meta.json`.
+- `app/` — Next.js App Router. Les docs sont servies à la racine (`/`) via le groupe de routes `(docs)`.
+- `lib/source.ts` — chargeur de contenu Fumadocs.
+- `lib/layout.shared.tsx` — configuration commune (nav, logo, liens).
+- `components/mdx.tsx` — composants MDX globaux.
+- `source.config.ts` — configuration Fumadocs MDX.
 
 ## Build
 
 ```bash
-yarn build
+pnpm build
+pnpm start
 ```
-
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
-
-## Deployment
-
-Using SSH:
-
-```bash
-USE_SSH=true yarn deploy
-```
-
-Not using SSH:
-
-```bash
-GIT_USER=<Your GitHub username> yarn deploy
-```
-
-If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.

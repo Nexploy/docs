@@ -1,0 +1,140 @@
+---
+title: Catalogue des nœuds
+description: Tous les types de nœuds disponibles dans l'éditeur de pipeline
+---
+
+## Source (récupération du code)
+
+| Nœud | Description |
+|---|---|
+| `clone-repository` | Clone le dépôt Git configuré |
+| `webhook-clone` | Clone déclenché depuis un webhook |
+| `git-clone-extra` | Clone un dépôt Git additionnel |
+
+## Git (opérations sur le dépôt)
+
+| Nœud | Description |
+|---|---|
+| `git-tag` | Crée un tag Git |
+| `merge-branch` | Fusionne une branche |
+| `cherry-pick-commit` | Applique un commit spécifique |
+| `create-release` | Crée une release |
+| `update-commit-status` | Met à jour le statut du commit chez le provider Git |
+
+## Build & validation
+
+| Nœud | Description |
+|---|---|
+| `validate-dockerfile` | Vérifie la validité du Dockerfile |
+| `validate-compose` | Vérifie la validité du fichier compose |
+| `build-docker-image` | Construit l'image Docker |
+
+## Registres Docker
+
+| Nœud | Description |
+|---|---|
+| `push-to-registry` | Pousse une image vers un registre |
+| `pull-from-registry` | Récupère une image depuis un registre |
+
+## Déploiement
+
+| Nœud | Description |
+|---|---|
+| `deploy-compose` | Déploie une stack docker-compose |
+| `set-environment` | Sélectionne l'environnement (hôte Docker) cible |
+| `trigger-stage-build` | Déclenche le build d'une étape de déploiement |
+
+## Conteneurs Docker
+
+| Nœud | Description |
+|---|---|
+| `create-container` | Crée un conteneur |
+| `start-container` | Démarre un conteneur |
+| `stop-container` | Arrête un conteneur |
+| `restart-container` | Redémarre un conteneur |
+| `remove-container` | Retire un conteneur |
+| `delete-container` | Supprime un conteneur |
+| `run-command-in-container` | Exécute une commande dans un conteneur |
+
+## Réseaux & volumes Docker
+
+| Nœud | Description |
+|---|---|
+| `create-network` | Crée un réseau Docker |
+| `delete-network` | Supprime un réseau |
+| `create-volume` | Crée un volume |
+| `delete-volume` | Supprime un volume |
+
+## Images Docker
+
+| Nœud | Description |
+|---|---|
+| `tag-image` | Tague une image |
+| `scan-image` | Analyse une image (vulnérabilités) |
+| `prune-images` | Nettoie les images inutilisées |
+| `delete-image` | Supprime une image |
+
+## Docker Swarm
+
+| Nœud | Description |
+|---|---|
+| `create-service` | Crée un service Swarm |
+| `update-service` | Met à jour un service |
+| `scale-service` | Ajuste le nombre de réplicas |
+
+## Variables & secrets
+
+| Nœud | Description |
+|---|---|
+| `env-vars` | Charge les variables d'environnement du dépôt |
+| `set-env-vars` | Définit des variables d'environnement |
+| `fetch-secrets-vault` | Récupère des secrets depuis HashiCorp Vault |
+| `fetch-secrets-doppler` | Récupère des secrets depuis Doppler |
+
+## Contrôle de flux
+
+| Nœud | Description |
+|---|---|
+| `condition` | Branche le pipeline selon une condition |
+| `delay` | Attend un délai fixe |
+| `wait-for-health` | Attend qu'un conteneur soit « healthy » |
+| `wait-for-port` | Attend qu'un port réponde |
+| `wait-for-url` | Attend qu'une URL réponde |
+
+## HTTP & webhooks
+
+| Nœud | Description |
+|---|---|
+| `http-request` | Effectue une requête HTTP |
+
+## Notifications & monitoring
+
+| Nœud | Description |
+|---|---|
+| `send-notification` | Envoie une notification |
+| `check-container-logs` | Vérifie les logs d'un conteneur |
+
+## Cache
+
+| Nœud | Description |
+|---|---|
+| `cache-save` | Sauvegarde un cache de build |
+| `cache-restore` | Restaure un cache de build |
+
+## Domaines & SSL
+
+| Nœud | Description |
+|---|---|
+| `add-domain` | Ajoute un domaine (route Traefik) |
+| `remove-domain` | Retire un domaine |
+| `add-ssl-certificate` | Ajoute un certificat SSL |
+
+## Fichiers, sauvegarde & qualité
+
+| Nœud | Description |
+|---|---|
+| `download-file` | Télécharge un fichier |
+| `backup-volume-bucket-storage` | Sauvegarde un volume vers un bucket (S3) |
+| `sonarqube-scan` | Analyse de qualité de code via SonarQube |
+| `save-version` | Enregistre une version |
+| `clean-workdir` | Nettoie le répertoire de travail |

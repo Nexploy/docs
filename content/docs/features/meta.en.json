@@ -1,0 +1,10 @@
+{
+  "title": "Features",
+  "pages": [
+    "git-integration",
+    "monitoring",
+    "registries",
+    "backups",
+    "ai-assistant"
+  ]
+}

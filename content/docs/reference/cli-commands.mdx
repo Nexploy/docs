@@ -1,0 +1,30 @@
+---
+title: Commandes utiles
+description: Commandes de développement courantes
+---
+
+```bash
+# Développement
+pnpm dev                                # Toutes les apps
+pnpm dev:nexploy                        # Next.js seul (port 3000)
+pnpm dev:docker-api                     # Docker API seul (port 3300)
+
+# Build
+pnpm build                              # Toutes les apps
+
+# Base de données
+pnpm --filter=nexploy db:migrate:dev    # Créer & appliquer migrations
+pnpm --filter=nexploy db:migrate:prod   # Appliquer migrations (prod)
+pnpm --filter=nexploy db:generate       # Générer le client Prisma
+pnpm --filter=nexploy db:studio         # Prisma Studio (GUI)
+pnpm --filter=nexploy db:reset          # Reset de la base
+
+# Qualité du code
+pnpm lint                               # Lint
+pnpm types                              # Type check
+pnpm format                             # Prettier
+
+# Tests e2e (Playwright)
+pnpm test:e2e                           # Lancer les tests
+pnpm test:e2e:ui                        # Mode UI
+```

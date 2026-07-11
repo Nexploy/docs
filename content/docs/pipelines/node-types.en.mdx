@@ -1,0 +1,140 @@
+---
+title: Node catalog
+description: All node types available in the pipeline editor
+---
+
+## Source (fetching the code)
+
+| Node | Description |
+|---|---|
+| `clone-repository` | Clones the configured Git repository |
+| `webhook-clone` | Clone triggered from a webhook |
+| `git-clone-extra` | Clones an additional Git repository |
+
+## Git (repository operations)
+
+| Node | Description |
+|---|---|
+| `git-tag` | Creates a Git tag |
+| `merge-branch` | Merges a branch |
+| `cherry-pick-commit` | Applies a specific commit |
+| `create-release` | Creates a release |
+| `update-commit-status` | Updates the commit status on the Git provider |
+
+## Build & validation
+
+| Node | Description |
+|---|---|
+| `validate-dockerfile` | Checks the Dockerfile validity |
+| `validate-compose` | Checks the compose file validity |
+| `build-docker-image` | Builds the Docker image |
+
+## Docker registries
+
+| Node | Description |
+|---|---|
+| `push-to-registry` | Pushes an image to a registry |
+| `pull-from-registry` | Pulls an image from a registry |
+
+## Deployment
+
+| Node | Description |
+|---|---|
+| `deploy-compose` | Deploys a docker-compose stack |
+| `set-environment` | Selects the target environment (Docker host) |
+| `trigger-stage-build` | Triggers the build of a deployment stage |
+
+## Docker containers
+
+| Node | Description |
+|---|---|
+| `create-container` | Creates a container |
+| `start-container` | Starts a container |
+| `stop-container` | Stops a container |
+| `restart-container` | Restarts a container |
+| `remove-container` | Removes a container |
+| `delete-container` | Deletes a container |
+| `run-command-in-container` | Runs a command in a container |
+
+## Docker networks & volumes
+
+| Node | Description |
+|---|---|
+| `create-network` | Creates a Docker network |
+| `delete-network` | Deletes a network |
+| `create-volume` | Creates a volume |
+| `delete-volume` | Deletes a volume |
+
+## Docker images
+
+| Node | Description |
+|---|---|
+| `tag-image` | Tags an image |
+| `scan-image` | Scans an image (vulnerabilities) |
+| `prune-images` | Cleans up unused images |
+| `delete-image` | Deletes an image |
+
+## Docker Swarm
+
+| Node | Description |
+|---|---|
+| `create-service` | Creates a Swarm service |
+| `update-service` | Updates a service |
+| `scale-service` | Adjusts the number of replicas |
+
+## Variables & secrets
+
+| Node | Description |
+|---|---|
+| `env-vars` | Loads the repository environment variables |
+| `set-env-vars` | Sets environment variables |
+| `fetch-secrets-vault` | Fetches secrets from HashiCorp Vault |
+| `fetch-secrets-doppler` | Fetches secrets from Doppler |
+
+## Flow control
+
+| Node | Description |
+|---|---|
+| `condition` | Branches the pipeline based on a condition |
+| `delay` | Waits for a fixed delay |
+| `wait-for-health` | Waits until a container is "healthy" |
+| `wait-for-port` | Waits until a port responds |
+| `wait-for-url` | Waits until a URL responds |
+
+## HTTP & webhooks
+
+| Node | Description |
+|---|---|
+| `http-request` | Performs an HTTP request |
+
+## Notifications & monitoring
+
+| Node | Description |
+|---|---|
+| `send-notification` | Sends a notification |
+| `check-container-logs` | Checks a container's logs |
+
+## Cache
+
+| Node | Description |
+|---|---|
+| `cache-save` | Saves a build cache |
+| `cache-restore` | Restores a build cache |
+
+## Domains & SSL
+
+| Node | Description |
+|---|---|
+| `add-domain` | Adds a domain (Traefik route) |
+| `remove-domain` | Removes a domain |
+| `add-ssl-certificate` | Adds an SSL certificate |
+
+## Files, backup & quality
+
+| Node | Description |
+|---|---|
+| `download-file` | Downloads a file |
+| `backup-volume-bucket-storage` | Backs up a volume to a bucket (S3) |
+| `sonarqube-scan` | Code quality analysis via SonarQube |
+| `save-version` | Saves a version |
+| `clean-workdir` | Cleans the working directory |

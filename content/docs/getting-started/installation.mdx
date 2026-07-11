@@ -1,0 +1,69 @@
+---
+title: Installation
+description: Installer Nexploy en production ou en développement
+---
+
+## Installation en production (recommandée)
+
+Nexploy fournit un script d'installation qui génère automatiquement les secrets et démarre tous les services.
+
+```bash
+git clone https://github.com/yourusername/nexploy.git
+cd nexploy
+./install.sh
+```
+
+Le script vous demandera :
+
+1. Votre **domaine** (ex. `nexploy.example.com`).
+
+Puis il génère automatiquement :
+
+- Le mot de passe PostgreSQL
+- Le secret d'authentification (`BETTER_AUTH_SECRET`)
+- La clé de chiffrement (`ENCRYPTION_KEY`)
+- Les clés Inngest (`INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`)
+
+Ces valeurs sont écrites dans un fichier `.env.production`, puis les images Docker sont construites et démarrées :
+
+```bash
+docker compose -f infra/docker/docker-compose.pre-prod.yml --env-file .env.production up -d
+```
+
+Une fois lancé, votre instance est accessible sur votre domaine en HTTPS.
+
+<Callout type="warn" title="Conservez précieusement votre ENCRYPTION_KEY">
+  Elle sert à déchiffrer vos variables d'environnement. Sa perte rend vos
+  secrets irrécupérables.
+</Callout>
+
+## Installation en développement
+
+```bash
+git clone https://github.com/yourusername/nexploy.git
+cd nexploy
+pnpm install
+
+# Configurer l'environnement
+cp apps/nexploy/.env.example apps/nexploy/.env
+cp apps/docker-api/.env.example apps/docker-api/.env
+
+# Démarrer l'infrastructure (PostgreSQL, Inngest, Traefik)
+docker compose -f docker-compose.dev.yml up -d
+
+# Migrations de la base de données
+pnpm --filter=nexploy db:migrate:dev
+
+# Démarrer tous les services
+pnpm dev
+```
+
+## Services et ports
+
+| Service | URL (dev) |
+|---|---|
+| Application web | http://localhost:3000 |
+| Docker API | http://localhost:3300 |
+| Inngest Dev Server | http://localhost:8288 |
+| Traefik Dashboard | http://localhost:8080 |
+| PostgreSQL | localhost:5433 |

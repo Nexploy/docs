@@ -1,0 +1,17 @@
+---
+title: Intégration Git
+description: Connexion à GitHub et GitLab via OAuth et webhooks
+---
+
+Nexploy se connecte à vos comptes GitHub et GitLab via OAuth pour cloner vos dépôts et écouter les événements de push.
+
+## Providers supportés
+
+| Provider | Scope OAuth requis |
+|---|---|
+| **GitHub** | `repo` (accès complet aux dépôts) |
+| **GitLab** | `api` (accès API) |
+
+## Webhooks
+
+Lors de la connexion d'un dépôt, Nexploy configure automatiquement un webhook. À chaque push sur la branche suivie, un build est déclenché. Chaque webhook est protégé par un secret pour valider l'authenticité des appels.

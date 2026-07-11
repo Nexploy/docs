@@ -1,0 +1,21 @@
+---
+title: Authentication
+description: Login methods, user management and data security
+---
+
+## Login methods
+
+- **Email / password**
+- **OAuth** — GitHub and GitLab
+- **Two-factor authentication (2FA)** — TOTP with backup codes
+
+## User management
+
+An admin plugin lets you manage users, their roles and their permissions. Permissions are granular per resource (read/write by object type).
+
+## Data security
+
+- **Encrypted environment variables** at rest (AES-256-CBC).
+- **OAuth tokens** stored securely with automatic refresh.
+- **Webhook secrets** validating callbacks from Git providers.
+- **CSRF protection** and session-based authentication.

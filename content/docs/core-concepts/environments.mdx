@@ -1,0 +1,16 @@
+---
+title: Environnements (hôtes Docker)
+description: Piloter plusieurs hôtes Docker
+---
+
+Un **environnement** représente un hôte Docker sur lequel déployer. Nexploy peut piloter plusieurs hôtes.
+
+## Types de connexion
+
+| Type | Description |
+|---|---|
+| **Local** | Socket Docker local de la machine hôte |
+| **TCP** | Connexion à un daemon Docker distant via TCP |
+| **SSH** | Connexion à un hôte distant via SSH |
+
+Vous pouvez ainsi séparer vos environnements (par ex. *staging* et *production*) et cibler l'hôte souhaité dans vos pipelines via le nœud `set-environment`.

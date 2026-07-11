@@ -1,0 +1,31 @@
+---
+title: Repositories
+description: An application to deploy from a Git repository
+---
+
+A **repository** represents an application to deploy from a Git repository.
+
+## Creating a repository
+
+1. Choose the Git provider and the source repository.
+2. Select the branch to track.
+3. Configure the **Dockerfile** (path) or a **docker-compose** file.
+4. Add your **environment variables** (encrypted).
+5. Define the **domain** and the Traefik routing.
+
+## Build lifecycle
+
+Each deployment goes through the following statuses:
+
+```
+QUEUED → BUILDING → DEPLOYING → COMPLETED
+                              ↘ FAILED / CANCELLED
+```
+
+Builds are **resumable**: on failure, they resume from the last successful step.
+
+## Environment variables
+
+- Added per repository, **encrypted at rest**.
+- Injected into a `.env` file at build time.
+- Never displayed in plain text in the interface after being saved.

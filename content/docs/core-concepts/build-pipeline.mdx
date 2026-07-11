@@ -1,0 +1,21 @@
+---
+title: Pipeline de build
+description: Étapes durables et résumables propulsées par Inngest
+---
+
+Le pipeline de build par défaut, propulsé par Inngest, exécute des étapes durables et résumables :
+
+1. **Clone repository** — clone Git avec le token OAuth.
+2. **Prepare Dockerfile** — copie et validation du Dockerfile.
+3. **Write env file** — création du `.env` depuis les variables chiffrées.
+4. **Build Docker image** — build de l'image (logs streamés en direct).
+5. **Deploy container** — création et démarrage du conteneur avec routage Traefik.
+6. **Cleanup** — suppression des fichiers temporaires.
+7. **Finalize logs** — clôture du build.
+
+**Caractéristiques :**
+
+- Logs en temps réel diffusés via SSE.
+- Reprise depuis n'importe quelle étape échouée.
+- Annulation possible en cours de build.
+- Option de build **sans cache** Docker.

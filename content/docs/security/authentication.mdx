@@ -1,0 +1,21 @@
+---
+title: Authentification
+description: Méthodes de connexion, gestion des utilisateurs et sécurité des données
+---
+
+## Méthodes de connexion
+
+- **Email / mot de passe**
+- **OAuth** — GitHub et GitLab
+- **Authentification à deux facteurs (2FA)** — TOTP avec codes de secours
+
+## Gestion des utilisateurs
+
+Un plugin d'administration permet de gérer les utilisateurs, leurs rôles et leurs permissions. Les permissions sont granulaires par ressource (lecture/écriture par type d'objet).
+
+## Sécurité des données
+
+- **Variables d'environnement chiffrées** au repos (AES-256-CBC).
+- **Tokens OAuth** stockés de façon sécurisée avec refresh automatique.
+- **Secrets de webhook** validant les callbacks des providers Git.
+- **Protection CSRF** et authentification par session.

@@ -1,0 +1,13 @@
+---
+title: Monitoring temps réel
+description: Logs, stats et événements Docker diffusés via SSE
+---
+
+Toutes les données sont diffusées en direct via **SSE** (Server-Sent Events) :
+
+- **Logs de build** streamés étape par étape.
+- **Stats des conteneurs** (CPU, mémoire) en direct.
+- **Événements Docker** (démarrage, arrêt, création…).
+- **Logs Traefik** pour le routage et les requêtes.
+
+Une seule connexion multiplexe plusieurs canaux pour un affichage temps réel fluide.

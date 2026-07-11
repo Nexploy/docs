@@ -1,0 +1,44 @@
+---
+title: Introduction
+description: Nexploy — plateforme de déploiement auto-hébergée pour Docker
+---
+
+**Nexploy** est une plateforme de déploiement **auto-hébergée** pour Docker. Elle déploie automatiquement vos applications depuis vos dépôts Git (GitHub / GitLab) vers des conteneurs Docker, avec HTTPS automatique grâce à Traefik.
+
+<Callout title="Le concept">
+  Vercel ou Netlify, mais auto-hébergé et basé sur Docker — vous gardez le
+  contrôle total de votre infrastructure et de vos données.
+</Callout>
+
+## Pourquoi Nexploy ?
+
+- **Déploiement continu** — un `git push` déclenche automatiquement le build et le déploiement.
+- **HTTPS automatique** — certificats SSL Let's Encrypt gérés par Traefik.
+- **Contrôle total** — vous hébergez tout, aucune donnée ne quitte votre serveur.
+- **Gestion Docker complète** — conteneurs, images, volumes, réseaux et Swarm depuis une seule interface.
+- **Pipelines personnalisables** — construisez vos propres workflows de déploiement avec un éditeur visuel de nœuds.
+- **Assistant IA intégré** — pilotez votre infrastructure en langage naturel.
+- **Temps réel** — logs, stats et événements Docker diffusés en direct.
+
+## Fonctionnalités clés
+
+| Fonctionnalité | Description |
+|---|---|
+| Intégration Git | Déploiement depuis GitHub et GitLab via OAuth |
+| Pipeline de build | Builds résumables, étape par étape, logs en direct |
+| Éditeur de pipeline visuel | Système de nœuds pour créer des workflows sur mesure |
+| Gestion Docker | Conteneurs, images, volumes, réseaux, Docker Swarm |
+| Reverse proxy Traefik | Routage automatique + SSL Let's Encrypt |
+| Monitoring temps réel | Stats conteneurs, logs, événements via SSE |
+| Variables chiffrées | Chiffrement AES-256-CBC au repos |
+| Terminal navigateur | Accès shell aux conteneurs via WebSocket |
+| Authentification 2FA | TOTP + codes de secours |
+| Assistant IA | Chat multi-providers connecté à vos ressources (MCP) |
+| Environnements multi-hôtes | Local, TCP ou SSH |
+| Sauvegardes | Sauvegardes planifiées vers un bucket S3 |
+| DNS Cloudflare | Gestion des enregistrements DNS |
+| Multi-langue | Anglais et Français |
+
+## Internationalisation
+
+L'interface est disponible en **anglais** (`en`) et en **français** (`fr`). La langue se sélectionne dans les préférences de votre compte.
