@@ -4,17 +4,17 @@ import { baseOptions } from '@/lib/layout.shared';
 import { source } from '@/lib/source';
 
 export default async function Layout({
-  params,
-  children,
-}: {
-  params: Promise<{ lang: string }>;
-  children: ReactNode;
+                                         params,
+                                         children,
+                                     }: {
+    params: Promise<{ lang: string }>;
+    children: ReactNode;
 }) {
-  const { lang } = await params;
+    const { lang } = await params;
 
-  return (
-    <DocsLayout tree={source.pageTree[lang]} {...baseOptions(lang)}>
-      {children}
-    </DocsLayout>
-  );
+    return (
+        <DocsLayout tree={source.pageTree[lang]} {...baseOptions(lang)}>
+            {children}
+        </DocsLayout>
+    );
 }

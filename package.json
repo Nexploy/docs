@@ -10,7 +10,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@wrksz/themes": "^1.0.0",
     "fumadocs-core": "^16.11.3",
     "fumadocs-mdx": "^15.1.0",
     "fumadocs-ui": "^16.11.3",

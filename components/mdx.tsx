@@ -8,5 +8,4 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
   };
 }
 
-// Consumed by MDX files through `providerImportSource` (see source.config.ts).
 export const useMDXComponents = getMDXComponents;

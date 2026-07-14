@@ -1,7 +1,3 @@
-overrides:
-  # Redirect Fumadocs' internal `next-themes` imports to a local shim backed by
-  # @wrksz/themes, which fixes the React 19 inline-script warning.
-  next-themes: link:./shims/next-themes
 allowBuilds:
   esbuild: true
   sharp: true

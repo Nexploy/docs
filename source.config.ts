@@ -6,7 +6,6 @@ export const docs = defineDocs({
 
 export default defineConfig({
   mdxOptions: {
-    // Path to import your global MDX components (components/mdx.tsx).
     providerImportSource: '@/components/mdx',
   },
 });
