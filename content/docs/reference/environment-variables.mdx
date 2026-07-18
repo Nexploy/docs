@@ -24,6 +24,9 @@ En production via l'installeur (`install.sh`), toutes ces variables sont génér
 | `DEPLOYER_WORK_DIR` | Répertoire de travail pour cloner les dépôts et builder les images |
 | `TRAEFIK_SERVICE_DIR` | Répertoire hôte du provider fichier Traefik (optionnel, déploiements conteneurisés) |
 | `TRAEFIK_CERTS_CONTAINER_PATH` | Chemin des certificats TLS dans le conteneur Traefik (optionnel) |
+| `TRAEFIK_STATIC_CONFIG_PATH` | Chemin où écrire `traefik.yml` au premier démarrage si absent (optionnel — n'active le rendu que sur les installs via `install.sh`) |
+| `TRAEFIK_USE_TLS` | `false` pour rendre `traefik.yml` sans HTTPS/ACME (mode IP sans domaine) — défaut `true` |
+| `ACME_EMAIL` | Email Let's Encrypt utilisé pour rendre `traefik.yml` quand `TRAEFIK_USE_TLS` n'est pas `false` |
 | `NEXPLOY_API_KEY` | Clé stable pour les appels internes (optionnel — auto-générée par process si absente) |
 | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `OPENROUTER_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY` | Clés des providers IA (optionnel, uniquement si l'assistant IA est activé) |
 | `LOG_LEVEL` | Niveau de log (ex. `info`) |
@@ -36,7 +39,12 @@ En production via l'installeur (`install.sh`), toutes ces variables sont génér
 | `LOG_LEVEL` | Niveau de log |
 | `DOCKER_SOCKET` | Chemin du socket Docker (défaut `/var/run/docker.sock`) |
 | `NEXPLOY_API_URL` | URL de l'app nexploy, pour rappeler l'app |
-| `NEXPLOY_API_KEY` | Secret partagé attendu par `docker-api` — même valeur que `DOCKER_API_KEY` côté nexploy |
+| `NEXPLOY_API_KEY` | Secret partagé attendu par `docker-api` — même valeur que `DOCKER_API_KEY` côté nexploy. Si absent, `docker-api` le récupère automatiquement au démarrage via `GET /api/internal/docker-api-key` (authentifié par `ENCRYPTION_KEY`) — c'est le comportement recommandé, ne le fixez pas manuellement |
+| `ENCRYPTION_KEY` | Même valeur que côté `apps/nexploy/.env` — utilisée pour authentifier la récupération automatique de `NEXPLOY_API_KEY` |
+| `TRAEFIK_CONTAINER_NAME` | Nom du conteneur Traefik à piloter (défaut `nexploy_traefik`) |
+| `TRAEFIK_NETWORK_NAME` | Réseau Docker que Traefik surveille (défaut `nexploy_traefik_network`) |
+| `NEXPLOY_APP_CONTAINER_NAME` | Nom du conteneur `nexploy_app` (défaut `nexploy_app`) — utilisé pour le recréer lors d'un changement de domaine/IP depuis Admin → Paramètres |
+| `TRAEFIK_STATIC_CONFIG_PATH` | Chemin de `traefik.yml`, supprimé puis attendu à nouveau après une recréation du conteneur `nexploy_app` (optionnel) |
 
 <Callout type="warn" title="Conservez précieusement votre ENCRYPTION_KEY">
   Elle sert à déchiffrer vos variables d'environnement de dépôt. Sa perte rend vos secrets irrécupérables.

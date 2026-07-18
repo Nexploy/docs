@@ -15,7 +15,7 @@ curl -fsSL https://nexploy.app/install.sh | sh
 Rien n'est cloné ni compilé — l'installeur récupère les images publiées (`nexploy/nexploy` et `nexploy/docker-api`), donc une installation prend environ une minute.
 </Callout>
 
-Le script installe Docker si besoin, demande votre **domaine** et un **email Let's Encrypt**, génère tous les secrets dans `/etc/nexploy/nexploy.env`, écrit la configuration Traefik, puis démarre cinq conteneurs :
+Le script installe Docker si besoin, demande votre **domaine** et un **email Let's Encrypt** (ou vous permet de sauter les deux et de tourner sur l'IP nue du serveur en HTTP simple — voir ci-dessous), génère tous les secrets dans `/etc/nexploy/nexploy.env`, écrit la configuration Traefik, puis démarre cinq conteneurs :
 
 | Conteneur | Rôle |
 |---|---|
@@ -25,7 +25,19 @@ Le script installe Docker si besoin, demande votre **domaine** et un **email Let
 | `nexploy_postgres` | Base de données |
 | `nexploy_inngest` | Jobs du pipeline de build |
 
-Prérequis : un DNS pointant vers la machine, et les ports **80** et **443** libres et accessibles — Let's Encrypt utilise un challenge HTTP.
+Prérequis : les ports **80** et **443** libres et accessibles. Si vous utilisez un domaine, le DNS doit pointer vers la machine avant la fin de l'installation — Let's Encrypt utilise un challenge HTTP pour émettre le certificat.
+
+### Installer sans domaine (IP uniquement)
+
+Pas encore de domaine ? Laissez le prompt domaine vide (ou définissez `NEXPLOY_NO_DOMAIN=true` pour une installation non interactive) et l'installeur détecte l'IP publique de votre serveur et sert Nexploy en HTTP simple à la place — pas de Let's Encrypt, pas d'email requis :
+
+```bash
+NEXPLOY_NO_DOMAIN=true sh -c "$(curl -fsSL https://nexploy.app/install.sh)"
+```
+
+<Callout type="warn">
+HTTP simple signifie aucun certificat — pratique pour démarrer, déconseillé sur la durée. Vous pouvez passer à un vrai domaine avec HTTPS à tout moment, soit depuis **Admin → Paramètres** dans l'app (qui recrée le conteneur de l'app et redémarre Traefik avec les nouveaux réglages, sans réinstallation), soit manuellement — voir [Reverse proxy & SSL](/networking/traefik-ssl).
+</Callout>
 
 ### Installation non interactive
 
@@ -37,14 +49,16 @@ NEXPLOY_DOMAIN=nexploy.example.com NEXPLOY_EMAIL=you@example.com \
 | Variable | Défaut | Rôle |
 |---|---|---|
 | `NEXPLOY_DOMAIN` | *(demandé)* | Domaine sur lequel l'app est servie |
-| `NEXPLOY_EMAIL` | *(demandé)* | Adresse de contact Let's Encrypt |
+| `NEXPLOY_EMAIL` | *(demandé si un domaine est défini)* | Adresse de contact Let's Encrypt |
+| `NEXPLOY_NO_DOMAIN` | `false` | À `true` pour sauter le domaine et servir sur l'IP du serveur (HTTP simple) |
 | `NEXPLOY_VERSION` | *(dernière release)* | Tag d'image à déployer, ex. `v1.0.0` |
 | `NEXPLOY_DIR` | `/etc/nexploy` | Emplacement des secrets et de la config Traefik |
+| `NEXPLOY_REPO` | `Nexploy/nexploy` | Repo GitHub utilisé pour résoudre la dernière release |
 
 ### Mise à jour
 
 ```bash
-curl -fsSL https://nexploy.app/install.sh | sh -s update
+curl -fsSL https://nexploy.app/install.sh | sh -s upgrade
 ```
 
 La mise à jour récupère la version demandée et recrée les conteneurs. Vos secrets, votre base de données et votre domaine restent intacts — relancer l'installeur ne les régénère jamais.
@@ -69,7 +83,7 @@ docker ps --filter name=nexploy_    # tous les conteneurs Nexploy
 corepack enable
 node -v   # doit être >= 22.13
 
-git clone https://github.com/yourusername/nexploy.git
+git clone https://github.com/Nexploy/nexploy.git
 cd nexploy
 pnpm install
 ```

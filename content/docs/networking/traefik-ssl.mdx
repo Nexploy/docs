@@ -9,3 +9,13 @@ Nexploy utilise **Traefik** comme reverse proxy.
 - **HTTPS automatique** — certificats Let's Encrypt générés et renouvelés automatiquement.
 - **Certificats personnalisés** — vous pouvez aussi fournir vos propres certificats SSL.
 - **Dashboard Traefik** disponible pour inspecter les routes.
+
+## Configuration au démarrage
+
+La configuration Traefik (fichiers de règles dynamiques et config statique) n'est pas livrée statiquement : `nexploy` la génère lui-même à son démarrage si elle n'existe pas encore — jamais si elle existe déjà, pour ne pas écraser une personnalisation faite à la main. C'est ce mécanisme qui alimente aussi bien une installation via `install.sh` qu'un déploiement `docker-compose`.
+
+## IP ou domaine pour l'instance elle-même
+
+Si vous avez installé Nexploy sans domaine (mode IP, voir [Installation](/getting-started/installation)), l'instance tourne en HTTP simple, sans certificat. Vous pouvez basculer vers un vrai domaine avec HTTPS à tout moment depuis **Admin → Paramètres** : renseignez le domaine et l'email Let's Encrypt, puis enregistrez. Nexploy recrée son propre conteneur avec les nouveaux réglages et redémarre Traefik automatiquement — comptez quelques secondes d'interruption, sans réinstallation ni manipulation manuelle de fichiers.
+
+Cette bascule n'est disponible que pour les instances installées via `install.sh` — pas pour un déploiement `docker-compose` où le domaine est fixé une fois pour toutes dans le fichier compose.

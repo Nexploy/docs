@@ -24,6 +24,9 @@ In production via the installer (`install.sh`), all of these variables are gener
 | `DEPLOYER_WORK_DIR` | Working directory for cloning repos and building images |
 | `TRAEFIK_SERVICE_DIR` | Host directory of the Traefik file provider (optional, containerized deployments) |
 | `TRAEFIK_CERTS_CONTAINER_PATH` | Path to TLS certs inside the Traefik container (optional) |
+| `TRAEFIK_STATIC_CONFIG_PATH` | Where to write `traefik.yml` on first boot if it doesn't exist (optional — only enables rendering on `install.sh` installs) |
+| `TRAEFIK_USE_TLS` | `false` to render `traefik.yml` without HTTPS/ACME (IP mode, no domain) — defaults to `true` |
+| `ACME_EMAIL` | Let's Encrypt email used to render `traefik.yml` when `TRAEFIK_USE_TLS` isn't `false` |
 | `NEXPLOY_API_KEY` | Stable key for internal calls (optional — auto-generated per process if unset) |
 | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `OPENROUTER_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY` | AI provider keys (optional, only needed if AI features are enabled) |
 | `LOG_LEVEL` | Log level (e.g. `info`) |
@@ -36,7 +39,12 @@ In production via the installer (`install.sh`), all of these variables are gener
 | `LOG_LEVEL` | Log level |
 | `DOCKER_SOCKET` | Path to the Docker socket (default `/var/run/docker.sock`) |
 | `NEXPLOY_API_URL` | URL of the nexploy app, to call it back |
-| `NEXPLOY_API_KEY` | Shared secret expected by `docker-api` — same value as `DOCKER_API_KEY` on the nexploy side |
+| `NEXPLOY_API_KEY` | Shared secret expected by `docker-api` — same value as `DOCKER_API_KEY` on the nexploy side. If unset, `docker-api` fetches it automatically on boot via `GET /api/internal/docker-api-key` (authenticated with `ENCRYPTION_KEY`) — this is the recommended setup, don't set it manually |
+| `ENCRYPTION_KEY` | Same value as on the `apps/nexploy/.env` side — used to authenticate the automatic `NEXPLOY_API_KEY` fetch |
+| `TRAEFIK_CONTAINER_NAME` | Name of the Traefik container to manage (default `nexploy_traefik`) |
+| `TRAEFIK_NETWORK_NAME` | Docker network Traefik watches (default `nexploy_traefik_network`) |
+| `NEXPLOY_APP_CONTAINER_NAME` | Name of the `nexploy_app` container (default `nexploy_app`) — used to recreate it on a domain/IP switch from Admin → Settings |
+| `TRAEFIK_STATIC_CONFIG_PATH` | Path to `traefik.yml`, removed then awaited again after a `nexploy_app` container recreation (optional) |
 
 <Callout type="warn" title="Keep your ENCRYPTION_KEY safe">
   It is used to decrypt your repository environment variables. Losing it makes your secrets unrecoverable.
