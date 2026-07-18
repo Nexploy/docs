@@ -5,65 +5,146 @@ description: Install Nexploy in production or for development
 
 ## Production installation (recommended)
 
-Nexploy provides an installation script that automatically generates the secrets and starts all services.
+On any machine with Docker, one command is enough:
 
 ```bash
-git clone https://github.com/yourusername/nexploy.git
-cd nexploy
-./install.sh
+curl -fsSL https://nexploy.app/install.sh | sh
 ```
 
-The script will ask you for:
+<Callout>
+Nothing is cloned or compiled — the installer pulls the published images (`nexploy/nexploy` and `nexploy/docker-api`), so a fresh install takes about a minute.
+</Callout>
 
-1. Your **domain** (e.g. `nexploy.example.com`).
+The script installs Docker if needed, asks for your **domain** and a **Let's Encrypt email**, generates every secret into `/etc/nexploy/nexploy.env`, writes the Traefik configuration, then starts five containers:
 
-Then it automatically generates:
+| Container | Role |
+|---|---|
+| `nexploy_traefik` | Reverse proxy, TLS, ports 80/443 |
+| `nexploy_app` | The application (runs migrations and the seed on first boot) |
+| `nexploy_docker_api` | Docker operations |
+| `nexploy_postgres` | Database |
+| `nexploy_inngest` | Build pipeline jobs |
 
-- The PostgreSQL password
-- The authentication secret (`BETTER_AUTH_SECRET`)
-- The encryption key (`ENCRYPTION_KEY`)
-- The Inngest keys (`INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`)
+Requirements: DNS pointing at the machine, and ports **80** and **443** free and reachable — Let's Encrypt uses an HTTP challenge.
 
-These values are written to a `.env.production` file, then the Docker images are built and started:
+### Non-interactive install
 
 ```bash
-docker compose -f infra/docker/docker-compose.pre-prod.yml --env-file .env.production up -d
+NEXPLOY_DOMAIN=nexploy.example.com NEXPLOY_EMAIL=you@example.com \
+  sh -c "$(curl -fsSL https://nexploy.app/install.sh)"
 ```
 
-Once running, your instance is available at your domain over HTTPS.
+| Variable | Default | Purpose |
+|---|---|---|
+| `NEXPLOY_DOMAIN` | *(prompted)* | Domain the app is served on |
+| `NEXPLOY_EMAIL` | *(prompted)* | Let's Encrypt contact address |
+| `NEXPLOY_VERSION` | *(latest release)* | Image tag to deploy, e.g. `v1.0.0` |
+| `NEXPLOY_DIR` | `/etc/nexploy` | Where secrets and Traefik config live |
 
-<Callout type="warn" title="Keep your ENCRYPTION_KEY safe">
-  It is used to decrypt your environment variables. Losing it makes your secrets
-  unrecoverable.
+### Upgrading
+
+```bash
+curl -fsSL https://nexploy.app/install.sh | sh -s update
+```
+
+The update pulls the requested version and recreates the containers. Your secrets, database and domain are untouched — re-running the installer never regenerates them.
+
+### Managing the instance
+
+```bash
+docker logs -f nexploy_app          # application logs
+docker restart nexploy_app          # restart the app
+docker ps --filter name=nexploy_    # every Nexploy container
+```
+
+<Callout type="warn" title="Keep the generated secrets safe">
+  The `/etc/nexploy/nexploy.env` file holds `ENCRYPTION_KEY` among others, used to decrypt your environment variables. Losing it makes your secrets unrecoverable.
 </Callout>
 
 ## Development installation
 
+### 1. Prerequisites and dependencies
+
 ```bash
+corepack enable
+node -v   # must be >= 22.13
+
 git clone https://github.com/yourusername/nexploy.git
 cd nexploy
 pnpm install
+```
 
-# Configure the environment
-cp apps/nexploy/.env.example apps/nexploy/.env
+### 2. Create the env files
+
+```bash
+cp apps/nexploy/.env.example    apps/nexploy/.env
 cp apps/docker-api/.env.example apps/docker-api/.env
+```
 
-# Start the infrastructure (PostgreSQL, Inngest, Traefik)
-docker compose -f docker-compose.dev.yml up -d
+Two secrets have no default — generate them and paste them into `apps/nexploy/.env`:
 
-# Database migrations
+```bash
+openssl rand -hex 32   # -> BETTER_AUTH_SECRET
+openssl rand -hex 32   # -> ENCRYPTION_KEY
+```
+
+Every other value already points at the dev stack (Postgres on `5433`, Inngest on `8288`). Leave `DOCKER_API_KEY` and `NEXPLOY_API_KEY` empty for now — step 5 produces them.
+
+### 3. Start the infrastructure
+
+```bash
+docker compose -f infra/docker/docker-compose.dev.yml up -d
+```
+
+| Container | Port | Notes |
+|---|---|---|
+| PostgreSQL | `5433` | user / password / database: `nexploy` |
+| Inngest dev server | `8288` | UI to inspect build jobs |
+| Traefik | `80`, `443`, `8080` | `8080` is the dashboard |
+
+### 4. Run the database migrations
+
+```bash
 pnpm --filter=nexploy db:migrate:dev
+```
 
-# Start all services
+### 5. Seed, and wire the internal API key
+
+Nexploy and `docker-api` authenticate to each other with a shared **Better Auth API key**. The seed creates it — along with the default local Docker environment — and prints it:
+
+```bash
+pnpm --filter=nexploy db:seed
+```
+
+```
+NEXPLOY_API_KEY=nxp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+Copy that value into **both** env files:
+
+```bash
+# apps/nexploy/.env      — the key nexploy sends to docker-api
+DOCKER_API_KEY=nxp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# apps/docker-api/.env   — the key docker-api expects, and uses to call nexploy back
+NEXPLOY_API_KEY=nxp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+<Callout type="warn">
+Re-running the seed **revokes and recreates** the key. If `docker-api` suddenly answers `401`, copy it again.
+</Callout>
+
+### 6. Start the apps
+
+```bash
 pnpm dev
 ```
 
-## Services and ports
-
-| Service | URL (dev) |
+| Service | URL |
 |---|---|
-| Web application | http://localhost:3000 |
+| Web app | http://localhost:3000 |
 | Docker API | http://localhost:3300 |
-| Inngest Dev Server | http://localhost:8288 |
-| Traefik Dashboard | http://localhost:8080 |
-| PostgreSQL | localhost:5433 |
+| Inngest dev UI | http://localhost:8288 |
+| Traefik dashboard | http://localhost:8080 |
+
+Open http://localhost:3000 — it redirects to `/setup`, where you create the first admin account.

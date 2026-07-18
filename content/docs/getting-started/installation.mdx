@@ -5,65 +5,146 @@ description: Installer Nexploy en production ou en développement
 
 ## Installation en production (recommandée)
 
-Nexploy fournit un script d'installation qui génère automatiquement les secrets et démarre tous les services.
+Sur une machine avec Docker, une seule commande suffit :
 
 ```bash
-git clone https://github.com/yourusername/nexploy.git
-cd nexploy
-./install.sh
+curl -fsSL https://nexploy.app/install.sh | sh
 ```
 
-Le script vous demandera :
+<Callout>
+Rien n'est cloné ni compilé — l'installeur récupère les images publiées (`nexploy/nexploy` et `nexploy/docker-api`), donc une installation prend environ une minute.
+</Callout>
 
-1. Votre **domaine** (ex. `nexploy.example.com`).
+Le script installe Docker si besoin, demande votre **domaine** et un **email Let's Encrypt**, génère tous les secrets dans `/etc/nexploy/nexploy.env`, écrit la configuration Traefik, puis démarre cinq conteneurs :
 
-Puis il génère automatiquement :
+| Conteneur | Rôle |
+|---|---|
+| `nexploy_traefik` | Reverse proxy, TLS, ports 80/443 |
+| `nexploy_app` | L'application (exécute les migrations et le seed au premier démarrage) |
+| `nexploy_docker_api` | Opérations Docker |
+| `nexploy_postgres` | Base de données |
+| `nexploy_inngest` | Jobs du pipeline de build |
 
-- Le mot de passe PostgreSQL
-- Le secret d'authentification (`BETTER_AUTH_SECRET`)
-- La clé de chiffrement (`ENCRYPTION_KEY`)
-- Les clés Inngest (`INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`)
+Prérequis : un DNS pointant vers la machine, et les ports **80** et **443** libres et accessibles — Let's Encrypt utilise un challenge HTTP.
 
-Ces valeurs sont écrites dans un fichier `.env.production`, puis les images Docker sont construites et démarrées :
+### Installation non interactive
 
 ```bash
-docker compose -f infra/docker/docker-compose.pre-prod.yml --env-file .env.production up -d
+NEXPLOY_DOMAIN=nexploy.example.com NEXPLOY_EMAIL=you@example.com \
+  sh -c "$(curl -fsSL https://nexploy.app/install.sh)"
 ```
 
-Une fois lancé, votre instance est accessible sur votre domaine en HTTPS.
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `NEXPLOY_DOMAIN` | *(demandé)* | Domaine sur lequel l'app est servie |
+| `NEXPLOY_EMAIL` | *(demandé)* | Adresse de contact Let's Encrypt |
+| `NEXPLOY_VERSION` | *(dernière release)* | Tag d'image à déployer, ex. `v1.0.0` |
+| `NEXPLOY_DIR` | `/etc/nexploy` | Emplacement des secrets et de la config Traefik |
 
-<Callout type="warn" title="Conservez précieusement votre ENCRYPTION_KEY">
-  Elle sert à déchiffrer vos variables d'environnement. Sa perte rend vos
-  secrets irrécupérables.
+### Mise à jour
+
+```bash
+curl -fsSL https://nexploy.app/install.sh | sh -s update
+```
+
+La mise à jour récupère la version demandée et recrée les conteneurs. Vos secrets, votre base de données et votre domaine restent intacts — relancer l'installeur ne les régénère jamais.
+
+### Gérer l'instance
+
+```bash
+docker logs -f nexploy_app          # logs de l'application
+docker restart nexploy_app          # redémarrer l'app
+docker ps --filter name=nexploy_    # tous les conteneurs Nexploy
+```
+
+<Callout type="warn" title="Conservez précieusement les secrets générés">
+  Le fichier `/etc/nexploy/nexploy.env` contient notamment `ENCRYPTION_KEY`, qui sert à déchiffrer vos variables d'environnement. Sa perte rend vos secrets irrécupérables.
 </Callout>
 
 ## Installation en développement
 
+### 1. Prérequis et installation des dépendances
+
 ```bash
+corepack enable
+node -v   # doit être >= 22.13
+
 git clone https://github.com/yourusername/nexploy.git
 cd nexploy
 pnpm install
+```
 
-# Configurer l'environnement
-cp apps/nexploy/.env.example apps/nexploy/.env
+### 2. Créer les fichiers d'environnement
+
+```bash
+cp apps/nexploy/.env.example    apps/nexploy/.env
 cp apps/docker-api/.env.example apps/docker-api/.env
+```
 
-# Démarrer l'infrastructure (PostgreSQL, Inngest, Traefik)
-docker compose -f docker-compose.dev.yml up -d
+Deux secrets n'ont pas de valeur par défaut — générez-les et collez-les dans `apps/nexploy/.env` :
 
-# Migrations de la base de données
+```bash
+openssl rand -hex 32   # -> BETTER_AUTH_SECRET
+openssl rand -hex 32   # -> ENCRYPTION_KEY
+```
+
+Toutes les autres valeurs pointent déjà vers la stack de dev (PostgreSQL sur `5433`, Inngest sur `8288`). Laissez `DOCKER_API_KEY` et `NEXPLOY_API_KEY` vides pour l'instant — l'étape 5 les génère.
+
+### 3. Démarrer l'infrastructure
+
+```bash
+docker compose -f infra/docker/docker-compose.dev.yml up -d
+```
+
+| Conteneur | Port | Notes |
+|---|---|---|
+| PostgreSQL | `5433` | utilisateur / mot de passe / base : `nexploy` |
+| Inngest dev server | `8288` | UI pour inspecter les jobs de build |
+| Traefik | `80`, `443`, `8080` | `8080` est le dashboard |
+
+### 4. Appliquer les migrations de la base de données
+
+```bash
 pnpm --filter=nexploy db:migrate:dev
+```
 
-# Démarrer tous les services
+### 5. Seed et clé API interne
+
+Nexploy et `docker-api` s'authentifient l'un l'autre via une **clé API Better Auth** partagée. Le seed la crée — avec l'environnement Docker local par défaut — et l'affiche :
+
+```bash
+pnpm --filter=nexploy db:seed
+```
+
+```
+NEXPLOY_API_KEY=nxp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+Copiez cette valeur dans **les deux** fichiers d'environnement :
+
+```bash
+# apps/nexploy/.env      — la clé que nexploy envoie à docker-api
+DOCKER_API_KEY=nxp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# apps/docker-api/.env   — la clé que docker-api attend, et utilise pour rappeler nexploy
+NEXPLOY_API_KEY=nxp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+<Callout type="warn">
+Relancer le seed **révoque et recrée** la clé. Si `docker-api` répond soudainement `401`, recopiez-la.
+</Callout>
+
+### 6. Démarrer les applications
+
+```bash
 pnpm dev
 ```
 
-## Services et ports
-
-| Service | URL (dev) |
+| Service | URL |
 |---|---|
 | Application web | http://localhost:3000 |
 | Docker API | http://localhost:3300 |
-| Inngest Dev Server | http://localhost:8288 |
+| Inngest Dev UI | http://localhost:8288 |
 | Traefik Dashboard | http://localhost:8080 |
-| PostgreSQL | localhost:5433 |
+
+Ouvrez http://localhost:3000 — vous êtes redirigé vers `/setup`, où vous créez le premier compte administrateur.

@@ -8,18 +8,23 @@ description: Variables d'environnement principales et premier démarrage
 | Variable | Rôle |
 |---|---|
 | `DATABASE_URL` | Chaîne de connexion PostgreSQL |
-| `ENCRYPTION_KEY` | Clé de chiffrement AES-256-CBC (32 octets hex) des variables d'env |
-| `BETTER_AUTH_SECRET` | Secret d'authentification |
+| `ENCRYPTION_KEY` | Clé de chiffrement AES-256-CBC (32 octets hex) des variables d'env — sans défaut, à générer avec `openssl rand -hex 32` |
+| `BETTER_AUTH_SECRET` | Secret d'authentification — sans défaut, à générer avec `openssl rand -hex 32` |
 | `BETTER_AUTH_URL` | URL publique de l'application |
+| `DOCKER_API_KEY` | Clé que **nexploy** envoie à `docker-api` pour s'authentifier — générée par `pnpm db:seed` |
+| `NEXPLOY_API_KEY` | Clé que **docker-api** attend (côté `docker-api`, même valeur que `DOCKER_API_KEY`) et utilise pour rappeler nexploy |
+| `INNGEST_BASE_URL` | URL du serveur Inngest self-hosté |
 | `INNGEST_EVENT_KEY` | Clé d'événement Inngest |
 | `INNGEST_SIGNING_KEY` | Clé de signature Inngest |
 | `LOG_LEVEL` | Niveau de log (ex. `info`) |
 
-<Callout>La liste complète est disponible dans `.env.example`.</Callout>
+<Callout>La liste complète est disponible dans `apps/nexploy/.env.example` et `apps/docker-api/.env.example`.</Callout>
+
+En production, l'installeur (`install.sh`) génère et gère automatiquement tous ces secrets dans `/etc/nexploy/nexploy.env`. En développement, `BETTER_AUTH_SECRET` et `ENCRYPTION_KEY` doivent être générés manuellement, tandis que `DOCKER_API_KEY`/`NEXPLOY_API_KEY` sont produits par `pnpm --filter=nexploy db:seed` — voir [Installation](/getting-started/installation) pour le détail.
 
 ## Premier démarrage
 
-Au premier lancement, créez votre compte administrateur via l'interface web. Vous pourrez ensuite :
+Au premier lancement, l'application vous redirige vers `/setup` où vous créez votre compte administrateur. Vous pourrez ensuite :
 
 1. Connecter un **provider Git** (GitHub ou GitLab).
 2. Configurer un ou plusieurs **environnements** (hôtes Docker).

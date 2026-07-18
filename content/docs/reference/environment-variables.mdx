@@ -3,19 +3,45 @@ title: Variables d'environnement
 description: Référence des variables d'environnement de Nexploy
 ---
 
+En production via l'installeur (`install.sh`), toutes ces variables sont générées et gérées automatiquement dans `/etc/nexploy/nexploy.env`. En développement, elles se configurent dans `apps/nexploy/.env` et `apps/docker-api/.env` (voir [Installation](/getting-started/installation)).
+
+## `apps/nexploy/.env`
+
 | Variable | Rôle |
 |---|---|
+| `NEXPLOY_URL` | URL publique de l'app (Inngest realtime, appels IA internes, etc.) |
+| `NEXPLOY_PORT` | Port d'écoute du serveur Next.js custom (défaut `3000`) |
+| `BETTER_AUTH_SECRET` | Secret de signature des sessions — sans défaut, générer avec `openssl rand -hex 32` |
+| `BETTER_AUTH_URL` | URL de base utilisée par Better Auth (callbacks/cookies) |
+| `TRUSTED_ORIGINS` | Liste d'origines de confiance additionnelles, séparées par des virgules (optionnel) |
 | `DATABASE_URL` | Chaîne de connexion PostgreSQL |
-| `ENCRYPTION_KEY` | Clé de chiffrement AES-256-CBC (32 octets hex) des variables d'env |
-| `BETTER_AUTH_SECRET` | Secret d'authentification |
-| `BETTER_AUTH_URL` | URL publique de l'application |
+| `ENCRYPTION_KEY` | Clé AES-256-CBC (32 octets hex) de chiffrement des variables d'env — sans défaut, générer avec `openssl rand -hex 32` |
+| `DOCKER_API_URL` | URL du service `docker-api` |
+| `DOCKER_API_KEY` | Clé envoyée à `docker-api` pour s'authentifier — générée par `pnpm db:seed` |
+| `INNGEST_BASE_URL` | URL du serveur Inngest self-hosté (SDK y envoie les événements / sync les fonctions) |
 | `INNGEST_EVENT_KEY` | Clé d'événement Inngest |
-| `INNGEST_SIGNING_KEY` | Clé de signature Inngest |
+| `INNGEST_SIGNING_KEY` | Clé de signature Inngest (vérifie les requêtes entre l'app et le serveur Inngest) |
+| `DEPLOYER_WORK_DIR` | Répertoire de travail pour cloner les dépôts et builder les images |
+| `TRAEFIK_SERVICE_DIR` | Répertoire hôte du provider fichier Traefik (optionnel, déploiements conteneurisés) |
+| `TRAEFIK_CERTS_CONTAINER_PATH` | Chemin des certificats TLS dans le conteneur Traefik (optionnel) |
+| `NEXPLOY_API_KEY` | Clé stable pour les appels internes (optionnel — auto-générée par process si absente) |
+| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `OPENROUTER_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY` | Clés des providers IA (optionnel, uniquement si l'assistant IA est activé) |
 | `LOG_LEVEL` | Niveau de log (ex. `info`) |
 
-<Callout>La liste complète est disponible dans `.env.example`.</Callout>
+## `apps/docker-api/.env`
+
+| Variable | Rôle |
+|---|---|
+| `PORT` | Port d'écoute (défaut `3300`) |
+| `LOG_LEVEL` | Niveau de log |
+| `DOCKER_SOCKET` | Chemin du socket Docker (défaut `/var/run/docker.sock`) |
+| `NEXPLOY_API_URL` | URL de l'app nexploy, pour rappeler l'app |
+| `NEXPLOY_API_KEY` | Secret partagé attendu par `docker-api` — même valeur que `DOCKER_API_KEY` côté nexploy |
 
 <Callout type="warn" title="Conservez précieusement votre ENCRYPTION_KEY">
-  Elle sert à déchiffrer vos variables d'environnement. Sa perte rend vos
-  secrets irrécupérables.
+  Elle sert à déchiffrer vos variables d'environnement de dépôt. Sa perte rend vos secrets irrécupérables.
+</Callout>
+
+<Callout type="warn" title="DOCKER_API_KEY et NEXPLOY_API_KEY doivent être identiques">
+  Ce sont deux noms différents pour le même secret : `DOCKER_API_KEY` côté `apps/nexploy/.env` et `NEXPLOY_API_KEY` côté `apps/docker-api/.env`. Un décalage entre les deux fait échouer tous les appels entre les deux services avec une erreur `401`.
 </Callout>

@@ -5,26 +5,28 @@ description: Common development commands
 
 ```bash
 # Development
-pnpm dev                                # All apps
+pnpm dev                                # nexploy + docker-api
 pnpm dev:nexploy                        # Next.js only (port 3000)
 pnpm dev:docker-api                     # Docker API only (port 3300)
 
-# Build
-pnpm build                              # All apps
+# Build & checks
+pnpm build                              # Build every workspace (Turborepo)
+pnpm types                              # Type check every workspace
+pnpm format                             # Format with Prettier
 
-# Database
-pnpm --filter=nexploy db:migrate:dev    # Create & apply migrations
-pnpm --filter=nexploy db:migrate:prod   # Apply migrations (prod)
-pnpm --filter=nexploy db:generate       # Generate the Prisma client
-pnpm --filter=nexploy db:studio         # Prisma Studio (GUI)
-pnpm --filter=nexploy db:reset          # Reset the database
+# Database (scoped to the nexploy app)
+pnpm --filter=nexploy db:migrate:dev    # Create & apply a migration
+pnpm --filter=nexploy db:migrate:prod   # Apply migrations (production)
+pnpm --filter=nexploy db:migrate:only   # Create a migration without applying it
+pnpm --filter=nexploy db:generate       # Regenerate the Prisma client
+pnpm --filter=nexploy db:seed           # Seed + print the internal API key
+pnpm --filter=nexploy db:studio         # Prisma Studio
+pnpm --filter=nexploy db:reset          # Drop, re-migrate, re-seed
 
-# Code quality
-pnpm lint                               # Lint
-pnpm types                              # Type check
-pnpm format                             # Prettier
-
-# e2e tests (Playwright)
-pnpm test:e2e                           # Run the tests
-pnpm test:e2e:ui                        # UI mode
+# End-to-end tests
+pnpm test:e2e                           # Playwright
 ```
+
+<Callout type="warn">
+`pnpm lint` is currently broken: `next lint` was removed in Next 16 and the lint scripts haven't been migrated yet. Use `pnpm types` in the meantime.
+</Callout>

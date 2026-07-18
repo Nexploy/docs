@@ -3,15 +3,22 @@ title: Prerequisites
 description: What you need before installing Nexploy
 ---
 
-Before installing Nexploy, make sure you have:
+## For a production install
 
-- A server (VPS or machine) running Linux
-- **Docker** installed
-- **Docker Compose** (`docker compose version` must work)
+- A server (VPS or machine) running Linux with **Docker** (the installer can install it for you if missing)
 - A **domain name** pointing to your server's IP address (for HTTPS)
-- Ports **80** and **443** open
+- Ports **80** and **443** free and reachable (Let's Encrypt uses an HTTP challenge)
+- A valid **email address** for the Let's Encrypt certificate registration
 
-For local development, you additionally need:
+## For local development
 
-- **Node.js** 18 or higher
-- **pnpm**
+| Tool | Version | Why |
+|---|---|---|
+| **Node.js** | **22.13+** | pnpm 11 requires it (it loads `node:sqlite`) |
+| **pnpm** | 11.9+ | `corepack enable` picks up the version pinned in `package.json` |
+| **Docker** | with Compose v2 | Runs Postgres, Inngest and Traefik — and is what Nexploy deploys to |
+
+```bash
+corepack enable
+node -v   # must be >= 22.13
+```

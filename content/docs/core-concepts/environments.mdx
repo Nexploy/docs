@@ -9,8 +9,8 @@ Un **environnement** représente un hôte Docker sur lequel déployer. Nexploy p
 
 | Type | Description |
 |---|---|
-| **Local** | Socket Docker local de la machine hôte |
-| **TCP** | Connexion à un daemon Docker distant via TCP |
-| **SSH** | Connexion à un hôte distant via SSH |
+| **Local (socket Unix)** | Socket Docker local de la machine hôte (`/var/run/docker.sock`) |
+| **TCP** | Connexion à un daemon Docker distant via TCP (hôte + port) |
+| **TCP avec TLS** | Connexion TCP distante authentifiée par certificat client (cert, clé et CA TLS) |
 
 Vous pouvez ainsi séparer vos environnements (par ex. *staging* et *production*) et cibler l'hôte souhaité dans vos pipelines via le nœud `set-environment`.

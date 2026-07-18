@@ -5,26 +5,28 @@ description: Commandes de développement courantes
 
 ```bash
 # Développement
-pnpm dev                                # Toutes les apps
+pnpm dev                                # nexploy + docker-api
 pnpm dev:nexploy                        # Next.js seul (port 3000)
 pnpm dev:docker-api                     # Docker API seul (port 3300)
 
-# Build
-pnpm build                              # Toutes les apps
+# Build & vérifications
+pnpm build                              # Toutes les apps (Turborepo)
+pnpm types                              # Type check de tous les workspaces
+pnpm format                             # Formatage Prettier
 
-# Base de données
-pnpm --filter=nexploy db:migrate:dev    # Créer & appliquer migrations
-pnpm --filter=nexploy db:migrate:prod   # Appliquer migrations (prod)
-pnpm --filter=nexploy db:generate       # Générer le client Prisma
+# Base de données (scopé à l'app nexploy)
+pnpm --filter=nexploy db:migrate:dev    # Créer & appliquer une migration
+pnpm --filter=nexploy db:migrate:prod   # Appliquer les migrations (production)
+pnpm --filter=nexploy db:migrate:only   # Créer une migration sans l'appliquer
+pnpm --filter=nexploy db:generate       # Régénérer le client Prisma
+pnpm --filter=nexploy db:seed           # Seed + affiche la clé API interne
 pnpm --filter=nexploy db:studio         # Prisma Studio (GUI)
-pnpm --filter=nexploy db:reset          # Reset de la base
+pnpm --filter=nexploy db:reset          # Drop, re-migrate, re-seed
 
-# Qualité du code
-pnpm lint                               # Lint
-pnpm types                              # Type check
-pnpm format                             # Prettier
-
-# Tests e2e (Playwright)
-pnpm test:e2e                           # Lancer les tests
-pnpm test:e2e:ui                        # Mode UI
+# Tests end-to-end
+pnpm test:e2e                           # Playwright
 ```
+
+<Callout type="warn">
+`pnpm lint` est actuellement cassé : `next lint` a été retiré dans Next 16 et les scripts de lint n'ont pas encore été migrés. Utilisez `pnpm types` en attendant.
+</Callout>
