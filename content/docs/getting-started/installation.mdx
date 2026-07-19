@@ -63,6 +63,12 @@ curl -fsSL https://nexploy.app/install.sh | sh -s upgrade
 
 La mise à jour récupère la version demandée et recrée les conteneurs. Vos secrets, votre base de données et votre domaine restent intacts — relancer l'installeur ne les régénère jamais.
 
+Si vous êtes déjà sur la dernière version, la commande ne fait rien. Pour forcer la recréation des conteneurs même sans changement de version (utile après un problème sur un conteneur, par exemple), ajoutez `--force` :
+
+```bash
+curl -fsSL https://nexploy.app/install.sh | sh -s upgrade --force
+```
+
 ### Gérer l'instance
 
 ```bash

@@ -63,6 +63,12 @@ curl -fsSL https://nexploy.app/install.sh | sh -s upgrade
 
 The upgrade pulls the requested version and recreates the containers. Your secrets, database and domain are untouched — re-running the installer never regenerates them.
 
+If you're already on the latest version, the command is a no-op. To force the containers to be recreated even without a version change (useful after a container got into a bad state, for example), add `--force`:
+
+```bash
+curl -fsSL https://nexploy.app/install.sh | sh -s upgrade --force
+```
+
 ### Managing the instance
 
 ```bash
