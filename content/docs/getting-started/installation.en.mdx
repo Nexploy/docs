@@ -36,7 +36,7 @@ NEXPLOY_NO_DOMAIN=true sh -c "$(curl -fsSL https://nexploy.app/install.sh)"
 ```
 
 <Callout type="warn">
-Plain HTTP means no certificate — fine to get started, not recommended long-term. You can switch to a real domain with HTTPS at any time, either from **Admin → Settings** in the app (it recreates the app container and restarts Traefik with the new settings, no reinstall needed) or manually — see [Reverse proxy & SSL](/networking/traefik-ssl).
+Plain HTTP means no certificate — fine to get started, not recommended long-term. You can switch to a real domain with HTTPS at any time, either from **Admin → Settings** in the app (it recreates the app container and restarts Traefik with the new settings, no reinstall needed) or manually — see [Reverse proxy & SSL](/networking/traefik-ssl). Remember to also manually update the OAuth redirect URL on your git provider's side — see [Reverse proxy & SSL](/networking/traefik-ssl).
 </Callout>
 
 ### Non-interactive install

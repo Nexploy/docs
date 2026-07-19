@@ -36,7 +36,7 @@ NEXPLOY_NO_DOMAIN=true sh -c "$(curl -fsSL https://nexploy.app/install.sh)"
 ```
 
 <Callout type="warn">
-HTTP simple signifie aucun certificat — pratique pour démarrer, déconseillé sur la durée. Vous pouvez passer à un vrai domaine avec HTTPS à tout moment, soit depuis **Admin → Paramètres** dans l'app (qui recrée le conteneur de l'app et redémarre Traefik avec les nouveaux réglages, sans réinstallation), soit manuellement — voir [Reverse proxy & SSL](/networking/traefik-ssl).
+HTTP simple signifie aucun certificat — pratique pour démarrer, déconseillé sur la durée. Vous pouvez passer à un vrai domaine avec HTTPS à tout moment, soit depuis **Admin → Paramètres** dans l'app (qui recrée le conteneur de l'app et redémarre Traefik avec les nouveaux réglages, sans réinstallation), soit manuellement — voir [Reverse proxy & SSL](/networking/traefik-ssl). Pensez aussi à mettre à jour manuellement l'URL de redirection OAuth chez votre fournisseur git — voir [Reverse proxy & SSL](/networking/traefik-ssl).
 </Callout>
 
 ### Installation non interactive

@@ -19,3 +19,7 @@ Traefik's configuration (dynamic rule files and static config) isn't shipped sta
 If you installed Nexploy without a domain (IP mode, see [Installation](/getting-started/installation)), the instance runs over plain HTTP, with no certificate. You can switch to a real domain with HTTPS at any time from **Admin → Settings**: enter the domain and a Let's Encrypt email, then save. Nexploy recreates its own container with the new settings and restarts Traefik automatically — expect a few seconds of downtime, no reinstall or manual file editing required.
 
 This switch is only available for instances installed via `install.sh` — not for a `docker-compose` deployment, where the domain is fixed once and for all in the compose file.
+
+<Callout type="warn">
+This address change (IP → domain, or the reverse) changes the instance's base URL. If you configured an OAuth app with your git provider (GitHub, GitLab, etc.), its **redirect (callback) URL** still points to the old address and must be updated **manually** in the OAuth app settings on the provider's side — Nexploy does not sync it automatically.
+</Callout>
