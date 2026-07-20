@@ -25,7 +25,7 @@ The script installs Docker if needed, asks for your **domain** and a **Let's Enc
 | `nexploy_postgres` | Database |
 | `nexploy_inngest` | Build pipeline jobs |
 
-Requirements: ports **80** and **443** free and reachable. If you use a domain, DNS must point at the machine before the install finishes — Let's Encrypt uses an HTTP challenge to issue the certificate.
+Requirements: run the script as **root** (it manages Docker and writes to `/etc/nexploy`), and ports **80** and **443** free and reachable. If you use a domain, DNS must point at the machine before the install finishes — Let's Encrypt uses an HTTP challenge to issue the certificate.
 
 ### Installing without a domain (IP only)
 
@@ -68,6 +68,16 @@ If you're already on the latest version, the command is a no-op. To force the co
 ```bash
 curl -fsSL https://nexploy.app/install.sh | sh -s upgrade --force
 ```
+
+### Uninstalling
+
+```bash
+curl -fsSL https://nexploy.app/install.sh | sh -s uninstall
+```
+
+<Callout type="warn" title="Destructive">
+This deletes your database, your deployments' metadata and every generated secret — there is no undo. You'll be asked to type `remove` to confirm.
+</Callout>
 
 ### Managing the instance
 
