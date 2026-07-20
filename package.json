@@ -1,6 +1,7 @@
 {
   "name": "docs",
   "version": "0.0.0",
+  "description": "Nexploy docs — how to self-host your own Docker deployment platform, an alternative to Vercel/Netlify.",
   "private": true,
   "scripts": {
     "dev": "next dev --port 3004",
