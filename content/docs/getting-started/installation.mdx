@@ -15,7 +15,7 @@ curl -fsSL https://nexploy.app/install.sh | sh
 Rien n'est cloné ni compilé — l'installeur récupère les images publiées (`nexploy/nexploy` et `nexploy/docker-api`), donc une installation prend environ une minute.
 </Callout>
 
-Le script installe Docker si besoin, demande votre **domaine** et un **email Let's Encrypt** (ou vous permet de sauter les deux et de tourner sur l'IP nue du serveur en HTTP simple — voir ci-dessous), génère tous les secrets dans `/etc/nexploy/nexploy.env`, écrit la configuration Traefik, puis démarre cinq conteneurs :
+Le script installe Docker si besoin, demande votre **domaine** et un **email Let's Encrypt** (ou vous permet de sauter les deux et de tourner sur l'IP nue du serveur en HTTP simple — voir ci-dessous), génère tous les secrets et les passe directement aux conteneurs (rien n'est écrit en clair sur le disque de l'hôte), écrit la configuration Traefik, puis démarre cinq conteneurs :
 
 | Conteneur | Rôle |
 |---|---|
@@ -87,8 +87,8 @@ docker restart nexploy_app          # redémarrer l'app
 docker ps --filter name=nexploy_    # tous les conteneurs Nexploy
 ```
 
-<Callout type="warn" title="Conservez précieusement les secrets générés">
-  Le fichier `/etc/nexploy/nexploy.env` contient notamment `ENCRYPTION_KEY`, qui sert à déchiffrer vos variables d'environnement. Sa perte rend vos secrets irrécupérables.
+<Callout type="warn" title="Ne supprimez pas les conteneurs sans réfléchir">
+  Vos secrets (dont `ENCRYPTION_KEY`, qui sert à déchiffrer vos variables d'environnement) ne sont stockés nulle part sur le disque de l'hôte — ils vivent uniquement dans l'environnement des conteneurs (consultable via `docker inspect nexploy_app`). Supprimer les conteneurs sans avoir sauvegardé ces valeurs les rend irrécupérables. Seul `/etc/nexploy/cli.env` persiste sur disque, et ne contient que le hash de la recovery key de `nexploy-cli` — voir [CLI de recovery](/security/recovery-cli).
 </Callout>
 
 ## Installation en développement

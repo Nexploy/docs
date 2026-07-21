@@ -3,7 +3,9 @@ title: Variables d'environnement
 description: Référence des variables d'environnement de Nexploy
 ---
 
-En production via l'installeur (`install.sh`), toutes ces variables sont générées et gérées automatiquement dans `/etc/nexploy/nexploy.env`. En développement, elles se configurent dans `apps/nexploy/.env` et `apps/docker-api/.env` (voir [Installation](/getting-started/installation)).
+En production via l'installeur (`install.sh`), toutes ces variables sont générées automatiquement et passées directement à chaque conteneur au démarrage — aucune n'est écrite dans un fichier sur l'hôte (consultables via `docker inspect nexploy_app` / `docker inspect nexploy_docker_api`). En développement, elles se configurent dans `apps/nexploy/.env` et `apps/docker-api/.env` (voir [Installation](/getting-started/installation)).
+
+Seul `nexploy-cli` (l'outil de recovery, distinct de l'application) persiste une donnée sur l'hôte, dans `/etc/nexploy/cli.env` : le hash de sa recovery key — voir [CLI de recovery](/security/recovery-cli).
 
 ## `apps/nexploy/.env`
 

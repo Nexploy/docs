@@ -1,4 +1,4 @@
 {
   "title": "Security",
-  "pages": ["authentication", "api-keys"]
+  "pages": ["authentication", "api-keys", "recovery-cli"]
 }
