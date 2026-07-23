@@ -1,0 +1,69 @@
+---
+title: Organisations
+description: Regrouper vos dépôts et collaborer à plusieurs sur une même instance
+---
+
+Une **organisation** regroupe des dépôts et les membres autorisés à y accéder. Chaque dépôt appartient à une organisation : c'est elle qui détermine qui peut le voir et agir dessus.
+
+<Callout title="Pourquoi c'est important">
+  Sans organisation, tout utilisateur disposant du rôle adéquat pouvait agir sur
+  **l'ensemble** des ressources de l'instance. L'appartenance à une organisation
+  est désormais vérifiée pour chaque action sur un dépôt, un build, un conteneur
+  ou un domaine.
+</Callout>
+
+## Deux niveaux de permissions
+
+Nexploy combine deux systèmes de rôles qu'il ne faut pas confondre :
+
+| Niveau | Rôles | Portée |
+| --- | --- | --- |
+| **Instance** | `guest`, `developer`, `admin` | Administration globale : utilisateurs, Traefik, registries, certificats SSL, sauvegardes, réglages |
+| **Organisation** | `owner`, `admin`, `member` | Ressources d'une organisation précise : dépôts, builds, pipelines, variables d'environnement, domaines, conteneurs |
+
+Pour agir sur une ressource, il faut **les deux** : le rôle d'instance autorise le type d'action, le rôle d'organisation autorise l'accès à cette ressource-là.
+
+Un utilisateur ayant le rôle d'instance `admin` accède à toutes les organisations, afin de pouvoir intervenir en support.
+
+## Rôles d'organisation
+
+- **`member`** — consulte les dépôts, lance des builds, gère les conteneurs de l'organisation. Ne peut ni créer ni supprimer de dépôt, ni modifier les variables d'environnement.
+- **`admin`** — gère les dépôts, pipelines, variables d'environnement, domaines et déploiements. Invite et retire des membres.
+- **`owner`** — tout ce que peut faire un `admin`, plus le renommage et la suppression de l'organisation.
+
+## Inviter un membre
+
+Les invitations se font **dans l'application**, sans email.
+
+1. Ouvrez l'organisation, puis **Membres**.
+2. Cliquez sur **Inviter un membre** et saisissez l'adresse email.
+3. Choisissez le rôle (`member` ou `admin`).
+
+La personne invitée voit l'invitation sur sa page **Compte** et l'accepte ou la refuse en un clic.
+
+<Callout type="warn" title="Le compte doit déjà exister">
+  L'inscription libre étant désactivée sur Nexploy, vous ne pouvez inviter qu'une
+  adresse correspondant à un compte existant. Créez d'abord l'utilisateur depuis
+  **Administration → Utilisateurs**.
+</Callout>
+
+Les invitations expirent au bout de 7 jours. Une organisation accepte jusqu'à 100 membres.
+
+## Changer d'organisation
+
+Le sélecteur situé dans la barre latérale, à côté du logo, bascule d'une organisation à l'autre. L'organisation active détermine celle à laquelle sont rattachés les nouveaux dépôts.
+
+## Créer une organisation
+
+Depuis **Organisations → Créer une organisation**. Le rôle d'instance `developer` ou `admin` est requis ; un `guest` ne peut pas en créer.
+
+Le créateur en devient automatiquement `owner`.
+
+## Garde-fous
+
+- Le **dernier `owner`** d'une organisation ne peut être ni retiré, ni rétrogradé, ni la quitter. Transférez d'abord la propriété.
+- Une organisation **possédant encore des dépôts** ne peut pas être supprimée. Réassignez-les ou supprimez-les au préalable.
+
+## Migration depuis une version antérieure
+
+À la mise à jour, chaque utilisateur existant reçoit automatiquement une organisation personnelle dont il est `owner`, et ses dépôts y sont rattachés. Aucune action manuelle n'est nécessaire et aucun dépôt n'est perdu.

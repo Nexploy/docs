@@ -1,0 +1,68 @@
+---
+title: Organizations
+description: Group your repositories and collaborate with a team on a single instance
+---
+
+An **organization** groups repositories together with the members allowed to access them. Every repository belongs to an organization, and that organization determines who can see it and act on it.
+
+<Callout title="Why it matters">
+  Without organizations, any user with the right role could act on **every**
+  resource in the instance. Organization membership is now checked for each
+  action on a repository, a build, a container or a domain.
+</Callout>
+
+## Two permission levels
+
+Nexploy combines two role systems that should not be confused:
+
+| Level | Roles | Scope |
+| --- | --- | --- |
+| **Instance** | `guest`, `developer`, `admin` | Global administration: users, Traefik, registries, SSL certificates, backups, settings |
+| **Organization** | `owner`, `admin`, `member` | Resources of one specific organization: repositories, builds, pipelines, environment variables, domains, containers |
+
+Acting on a resource requires **both**: the instance role allows the type of action, the organization role grants access to that particular resource.
+
+A user with the `admin` instance role can reach every organization, so support operations remain possible.
+
+## Organization roles
+
+- **`member`** — browses repositories, starts builds, manages the organization's containers. Cannot create or delete repositories, nor edit environment variables.
+- **`admin`** — manages repositories, pipelines, environment variables, domains and deployments. Invites and removes members.
+- **`owner`** — everything an `admin` can do, plus renaming and deleting the organization.
+
+## Inviting a member
+
+Invitations happen **in-app**, with no email involved.
+
+1. Open the organization, then **Members**.
+2. Click **Invite member** and enter the email address.
+3. Pick the role (`member` or `admin`).
+
+The invited person sees the invitation on their **Account** page and accepts or declines it in one click.
+
+<Callout type="warn" title="The account must already exist">
+  Because open sign-up is disabled in Nexploy, you can only invite an address
+  that matches an existing account. Create the user first from
+  **Administration → Users**.
+</Callout>
+
+Invitations expire after 7 days. An organization accepts up to 100 members.
+
+## Switching organization
+
+The switcher in the sidebar, next to the logo, moves between organizations. The active organization determines where newly created repositories are attached.
+
+## Creating an organization
+
+From **Organizations → Create organization**. The `developer` or `admin` instance role is required; a `guest` cannot create one.
+
+The creator automatically becomes its `owner`.
+
+## Safeguards
+
+- The **last `owner`** of an organization cannot be removed, demoted, or leave. Transfer ownership first.
+- An organization that **still owns repositories** cannot be deleted. Reassign or delete them beforehand.
+
+## Migrating from an earlier version
+
+On upgrade, every existing user automatically receives a personal organization they own, and their repositories are attached to it. No manual action is required and no repository is lost.

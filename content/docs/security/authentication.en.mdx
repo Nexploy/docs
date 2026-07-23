@@ -13,6 +13,8 @@ description: Login methods, user management and data security
 
 An admin plugin lets you manage users, their roles and their permissions. Permissions are granular per resource (read/write by object type).
 
+This instance role (`guest`, `developer`, `admin`) authorizes a **type** of action. Access to a specific resource additionally depends on membership of the organization that owns it — see [Organizations](/en/core-concepts/organizations).
+
 ## Data security
 
 - **Encrypted environment variables** at rest (AES-256-CBC).

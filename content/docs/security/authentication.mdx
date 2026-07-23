@@ -13,6 +13,8 @@ description: Méthodes de connexion, gestion des utilisateurs et sécurité des 
 
 Un plugin d'administration permet de gérer les utilisateurs, leurs rôles et leurs permissions. Les permissions sont granulaires par ressource (lecture/écriture par type d'objet).
 
+Ce rôle d'instance (`guest`, `developer`, `admin`) autorise un **type** d'action. L'accès à une ressource précise dépend en plus de l'appartenance à l'organisation qui la possède — voir [Organisations](/core-concepts/organizations).
+
 ## Sécurité des données
 
 - **Variables d'environnement chiffrées** au repos (AES-256-CBC).
