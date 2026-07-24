@@ -1,21 +1,39 @@
 ---
 title: Pipeline de build
-description: Étapes durables et résumables propulsées par Inngest
+description: Graphe de nœuds exécuté par Inngest à chaque déploiement
 ---
 
-Le pipeline de build par défaut, propulsé par Inngest, exécute des étapes durables et résumables :
+Un déploiement n'exécute pas une liste d'étapes figée : il exécute le **graphe de nœuds** configuré pour le stage déployé, orchestré par Inngest. Chaque nœud est une étape Inngest, ce qui rend l'exécution durable et permet de streamer les logs en direct.
 
-1. **Clone repository** — clone Git avec le token OAuth.
-2. **Prepare Dockerfile** — copie et validation du Dockerfile.
-3. **Write env file** — création du `.env` depuis les variables chiffrées.
-4. **Build Docker image** — build de l'image (logs streamés en direct).
-5. **Deploy container** — création et démarrage du conteneur avec routage Traefik.
-6. **Cleanup** — suppression des fichiers temporaires.
-7. **Finalize logs** — clôture du build.
+## Ce qui est exécuté
 
-**Caractéristiques :**
+Chaque stage d'un dépôt possède son propre pipeline, édité dans l'[éditeur de nœuds](/pipelines/visual-editor). Au démarrage d'un build, le graphe courant est **figé dans un snapshot** attaché au build : modifier le pipeline ensuite ne réécrit jamais l'historique des builds passés.
 
-- Logs en temps réel diffusés via SSE.
-- Reprise depuis n'importe quelle étape échouée.
-- Annulation possible en cours de build.
-- Option de build **sans cache** Docker.
+L'orchestrateur parcourt le graphe, exécute chaque nœud dès que tous ses nœuds amont sont terminés et transmet leurs sorties en aval. Une branche dont la condition n'est pas remplie est marquée *skipped*, ainsi que tout ce qui la suit.
+
+## Partir d'un modèle
+
+Deux modèles prêts à l'emploi sont disponibles dans l'éditeur, pour ne pas partir d'un canevas vide :
+
+| Modèle | Nœuds |
+|---|---|
+| **Dockerfile** | `clone-repository` → `build-docker-image` → `create-container` |
+| **Docker Compose** | `clone-repository` → `validate-compose` → `deploy-compose` → `clean-workdir`, avec `save-version` en dérivation |
+
+Ce ne sont que des points de départ — chaque nœud peut être ajouté, supprimé ou recâblé. La liste complète est dans le [catalogue de nœuds](/pipelines/node-types).
+
+## Statuts de build
+
+```
+QUEUED → BUILDING → COMPLETED
+                  ↘ FAILED / CANCELLED
+```
+
+Chaque nœud porte en plus son propre statut et sa durée, affichés en direct sur le graphe pendant le build.
+
+## Caractéristiques
+
+- Logs diffusés en temps réel via SSE, nœud par nœud.
+- Annulation possible en cours d'exécution.
+- Un build échoué n'est **pas** repris étape par étape : le pipeline s'arrête, et le relancer rejoue le graphe depuis le début.
+- Les variables d'environnement du dépôt sont injectées automatiquement dans `deploy-compose` et `create-container`.

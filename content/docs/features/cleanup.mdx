@@ -1,0 +1,35 @@
+---
+title: Nettoyage automatique
+description: Prune planifié des images, volumes, conteneurs et cache de build
+---
+
+Déployer en continu remplit un disque : chaque build laisse des images derrière lui, chaque conteneur recréé en laisse un à l'arrêt, et le cache BuildKit ne cesse de grossir. Nexploy peut exécuter un **prune planifié** pour récupérer cet espace tout seul.
+
+Se configure depuis **Administration → Paramètres**, à côté de la carte d'utilisation disque qui montre ce que coûte chaque catégorie.
+
+## Ce qui est nettoyé
+
+Choisissez les catégories à inclure — chacune correspond à un prune Docker :
+
+| Cible | Défaut | Ce qui est supprimé |
+|---|---|---|
+| **Conteneurs** | activé | Tous les conteneurs arrêtés |
+| **Images** | activé | Toutes les images **inutilisées**, pas seulement les dangling |
+| **Cache de build** | activé | Le cache de build BuildKit |
+| **Volumes** | désactivé | Tous les volumes non rattachés à un conteneur |
+
+<Callout type="warn" title="Les images et les volumes sont les deux cibles à risque">
+  Le nettoyage des images supprime toute image qu'aucun conteneur ne fait tourner — y compris celles vers lesquelles pointent vos [versions](/core-concepts/versions) passées, ce qui fait échouer ces rollbacks. Le nettoyage des volumes supprime les volumes non rattachés, c'est-à-dire l'endroit où vit la base de données d'une stack arrêtée. Ce sont deux décisions à prendre, pas des réglages à accepter les yeux fermés ; c'est pour cette raison que les volumes sont désactivés par défaut.
+</Callout>
+
+## Planification
+
+Le nettoyage tourne **une fois par jour**, à l'heure que vous choisissez (UTC). Il est piloté par une fonction Inngest qui dort jusqu'à l'heure prévue, exécute les prunes sélectionnés dans l'ordre, puis se replanifie — aucun cron à installer, et une exécution manquée ne s'accumule pas.
+
+Les réglages sont relus juste avant l'exécution du prune : désactiver le nettoyage annule l'exécution déjà en attente, et prend effet immédiatement.
+
+La planification est **par environnement Docker** — chaque hôte a ses propres réglages et son propre cycle, ce qui permet de nettoyer agressivement un hôte de build et de laisser la production tranquille.
+
+## Restitution
+
+Après chaque exécution, Nexploy enregistre sa date et l'espace disque récupéré, tous deux affichés dans la carte des paramètres. Une exécution sans aucune catégorie sélectionnée ne fait rien et ne récupère rien.

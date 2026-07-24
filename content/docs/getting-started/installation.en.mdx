@@ -118,7 +118,9 @@ openssl rand -hex 32   # -> BETTER_AUTH_SECRET
 openssl rand -hex 32   # -> ENCRYPTION_KEY
 ```
 
-Every other value already points at the dev stack (Postgres on `5433`, Inngest on `8288`). Leave `DOCKER_API_KEY` and `NEXPLOY_API_KEY` empty for now — step 5 produces them.
+`ENCRYPTION_KEY` also goes into `apps/docker-api/.env`, with the **same value** — docker-api uses it as the internal secret when it calls nexploy back to verify API keys.
+
+Every other value already points at the dev stack (Postgres on `5433`, Inngest on `8288`). Leave `NEXPLOY_API_KEY` empty in both files for now — step 5 produces it.
 
 ### 3. Start the infrastructure
 
@@ -154,11 +156,13 @@ Copy that value into **both** env files:
 
 ```bash
 # apps/nexploy/.env      — the key nexploy sends to docker-api
-DOCKER_API_KEY=nxp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+NEXPLOY_API_KEY=nxp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # apps/docker-api/.env   — the key docker-api expects, and uses to call nexploy back
 NEXPLOY_API_KEY=nxp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
+
+Both sides read it from the **same variable name**, `NEXPLOY_API_KEY`.
 
 <Callout type="warn">
 Re-running the seed **revokes and recreates** the key. If `docker-api` suddenly answers `401`, copy it again.

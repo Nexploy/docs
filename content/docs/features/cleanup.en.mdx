@@ -1,0 +1,35 @@
+---
+title: Automatic cleanup
+description: Scheduled prune of images, volumes, containers and build cache
+---
+
+Deploying continuously fills a disk: every build leaves images behind, every recreated container leaves a stopped one, and BuildKit's cache grows forever. Nexploy can run a **scheduled prune** to reclaim that space on its own.
+
+Configured from **Administration → Settings**, next to the disk usage card that shows what each category currently costs.
+
+## What it prunes
+
+Pick the categories to include — each one maps to a Docker prune:
+
+| Target | Default | What it removes |
+|---|---|---|
+| **Containers** | enabled | Every stopped container |
+| **Images** | enabled | Every **unused** image, not just dangling ones |
+| **Build cache** | enabled | The BuildKit build cache |
+| **Volumes** | disabled | Every volume not attached to a container |
+
+<Callout type="warn" title="Images and volumes are the dangerous two">
+  Image cleanup removes any image no container is running — including the images your past [versions](/en/core-concepts/versions) point to, which makes those rollbacks fail. Volume cleanup removes unattached volumes, which is where a database of a stopped stack lives. Both are opt-in decisions, not defaults to accept blindly; volumes are disabled out of the box for that reason.
+</Callout>
+
+## Scheduling
+
+Cleanup runs **once a day**, at the hour you choose (UTC). It is driven by an Inngest function that sleeps until the scheduled hour, runs the selected prunes in order, then re-schedules itself — so there's no cron to install and a missed run doesn't pile up.
+
+Settings are re-read right before the prune executes: disabling cleanup cancels the run that was already waiting, and it takes effect immediately.
+
+The schedule is **per Docker environment** — each host has its own settings and its own cycle, so you can prune aggressively on a build host and leave production alone.
+
+## Reporting
+
+After each run, Nexploy records when it ran and how much disk space was reclaimed, both shown in the settings card. A run where no category is selected does nothing and reclaims nothing.

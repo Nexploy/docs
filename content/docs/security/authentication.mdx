@@ -5,9 +5,16 @@ description: Méthodes de connexion, gestion des utilisateurs et sécurité des 
 
 ## Méthodes de connexion
 
-- **Email / mot de passe**
-- **OAuth** — GitHub et GitLab
-- **Authentification à deux facteurs (2FA)** — TOTP avec codes de secours
+- **Email / mot de passe** — seule méthode de connexion à l'application.
+- **Authentification à deux facteurs (2FA)** — TOTP avec codes de secours.
+- **Clés API** — pour l'accès programmatique, voir [Clés API](/security/api-keys).
+
+<Callout type="warn" title="Pas de connexion OAuth, et pas d'inscription ouverte">
+  Le OAuth GitHub / GitLab / Gitea sert uniquement à connecter vos dépôts Git,
+  pas à se connecter à Nexploy. L'inscription libre est désactivée : le premier
+  compte administrateur se crée via `/setup`, et les suivants depuis
+  **Administration → Utilisateurs**.
+</Callout>
 
 ## Gestion des utilisateurs
 

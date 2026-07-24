@@ -42,12 +42,12 @@ Applique un commit spécifique sur la branche courante.
 - **Configuration** : `commitHash`, `targetBranch`, `noCommit` (n'applique que le diff sans committer), `remote`.
 
 ### `create-release`
-Crée une release sur GitHub ou GitLab.
+Crée une release sur GitHub, GitLab ou Gitea.
 - **Configuration** : `tagName`, `targetBranch`, `releaseTitle`, `releaseNotes`, `draft`, `prerelease`.
 - **Sorties** : `releaseId`, `releaseUrl`.
 
 ### `update-commit-status`
-Met à jour le statut du commit chez le provider Git (pending/success/failure), visible directement dans la PR/MR GitHub ou GitLab.
+Met à jour le statut du commit chez le provider Git (pending/success/failure), visible directement dans la PR/MR GitHub, GitLab ou Gitea.
 - **Configuration** : `state` (`pending` / `success` / `failure` / `error`), `context` (nom du check, défaut `nexploy/pipeline`), `description`.
 
 ## Build & validation

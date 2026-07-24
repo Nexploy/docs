@@ -3,4 +3,38 @@ title: Clés API
 description: Accès programmatique à l'API Nexploy
 ---
 
-Nexploy prend en charge les **clés API** pour un accès programmatique. Créez une clé depuis votre compte pour appeler l'API sans session interactive.
+Nexploy prend en charge les **clés API** pour appeler son API sans session interactive.
+
+## Où les créer
+
+Les clés se génèrent depuis **Administration → IA → MCP**, la même page que celle qui sert à connecter un client MCP externe — voir [Serveur MCP](/features/mcp-server). Il n'y a pas d'autre écran de création : une clé générée là sert aussi bien à MCP qu'au reste de l'API.
+
+Générer une clé requiert la permission `mcpKey:create`, détenue par le seul rôle d'instance `admin`. Un `developer` peut voir les clés existantes mais pas en créer ni en révoquer.
+
+## Utilisation
+
+Envoyez la clé dans l'en-tête `x-api-key` :
+
+```bash
+curl -H "x-api-key: nxp_mcp_…" https://<votre-domaine>/api/repositories
+```
+
+Les clés sont **adossées à une session** : la requête est traitée exactement comme si l'utilisateur qui a créé la clé était connecté. Elle hérite donc de son rôle d'instance **et** de ses appartenances aux organisations — une clé créée par un utilisateur ne voit que les dépôts de ses organisations.
+
+## Cycle de vie
+
+- Le secret n'est affiché **qu'une seule fois**, à la création. Il n'est stocké que haché.
+- Les clés générées portent le préfixe `nxp_mcp_` et **n'expirent pas**.
+- Révoquez-les depuis la même page ; la révocation prend effet immédiatement.
+- Supprimer l'utilisateur propriétaire invalide ses clés.
+
+<Callout type="warn" title="Une clé vaut le compte qui l'a créée">
+  Il n'y a pas de restriction de portée par clé : elle donne accès à tout ce que
+  son propriétaire peut faire, y compris les actions destructives. Créez-les
+  depuis un compte dont les permissions correspondent à l'usage prévu, et
+  révoquez-les dès qu'un outil n'en a plus besoin.
+</Callout>
+
+## À ne pas confondre
+
+`NEXPLOY_API_KEY`, la clé partagée entre `nexploy` et `docker-api`, est une clé API interne du même mécanisme, mais elle est générée par le seed et gérée automatiquement en production — ne la révoquez pas depuis cette page. Voir [Variables d'environnement](/reference/environment-variables).

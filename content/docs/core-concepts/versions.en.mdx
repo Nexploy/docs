@@ -1,0 +1,48 @@
+---
+title: Versions & rollback
+description: Keep a history of deployed images and redeploy a previous one
+---
+
+A **version** is a snapshot of a successful deployment: the image that was deployed, the commit it came from, and the Docker host it went to. Versions are what makes a rollback a one-click operation instead of a rebuild.
+
+## Creating a version
+
+Versions are not created automatically — they are produced by the **`save-version`** node in your pipeline. Add it to the branch that deploys, and every successful run records a version.
+
+The node reads what it needs from its upstream nodes, so it doesn't need any configuration of its own:
+
+| Recorded | Source |
+|---|---|
+| `imageTag` | The build ID — this is also the image tag |
+| `versionNumber` | Auto-incremented per repository and environment (`v1`, `v2`, …) |
+| `branch`, `commitHash`, `commitMessage` | The closest upstream clone node |
+| `environmentId` | The closest upstream `set-environment`, or the default environment |
+| `stageId` | The stage the build ran for |
+| `composeConfig` | The rendered compose file, when the upstream node is `deploy-compose` |
+
+<Callout>
+  In the Docker Compose template, `save-version` is attached to `deploy-compose` — that is what lets a compose deployment be rolled back with the exact file it was deployed with.
+</Callout>
+
+## Redeploying a version
+
+From the repository's **Versions** tab, pick a version and redeploy it. Nexploy takes the shortest path — no clone, no build:
+
+- **Dockerfile deployment** — checks that the image `<repositoryId>:<imageTag>` still exists on the target host, then recreates the container from it.
+- **Compose deployment** — replays the compose configuration stored on the version, after checking that every image it builds is still present.
+
+In both cases, the repository's **current** environment variables are decrypted and injected. A rollback restores the previous *image*, not the previous *configuration*: if you changed a variable since, the old image restarts with the new value.
+
+<Callout type="warn" title="A version needs its image">
+  Versions store a reference, not the image bytes. If the image has been pruned from the host — manually or by the [automatic cleanup](/en/features/cleanup) — the redeploy fails with an *image not found* error. Keep this in mind when enabling image cleanup on a host you roll back on.
+</Callout>
+
+## Deleting a version
+
+Deleting a version from the interface removes **both** the database entry and the underlying Docker image (non-forced: the deletion fails if a container still uses it).
+
+Versions are scoped per stage: each stage of a repository has its own version list, on its own Docker host.
+
+## Permissions
+
+Redeploying a version requires the `deployment:deploy` permission — granted by the `developer` and `admin` instance roles, and by the `admin` and `owner` organization roles. An organization `member` can start builds but cannot redeploy a past version.

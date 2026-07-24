@@ -1,17 +1,40 @@
 ---
 title: Git integration
-description: Connect to GitHub and GitLab via OAuth and webhooks
+description: Connect GitHub, GitLab and Gitea, and trigger builds from webhooks
 ---
 
-Nexploy connects to your GitHub and GitLab accounts via OAuth to clone your repositories and listen to push events.
+Nexploy connects to your Git accounts to clone your repositories and listen to push events. Providers are configured once per instance from **Administration → Integrations**, then each user connects their own account to it.
 
 ## Supported providers
 
-| Provider | Required OAuth scope |
-|---|---|
-| **GitHub** | `repo` (full repository access) |
-| **GitLab** | `api` (API access) |
+| Provider | Integration type | What you provide |
+|---|---|---|
+| **GitHub** | GitHub App | Nothing — Nexploy generates the App from a manifest in one click (personal account or organization) |
+| **GitLab** | OAuth application | `Client ID`, `Client secret`, and a custom base URL for a self-hosted instance |
+| **Gitea** | OAuth application | `Client ID`, `Client secret`, and the base URL of your instance |
+
+### GitHub
+
+The GitHub integration is a **GitHub App**, not a classic OAuth app. Nexploy builds the App manifest itself and sends you to GitHub to confirm its creation; the credentials come back automatically. The App requests:
+
+| Permission | Level | Why |
+|---|---|---|
+| `contents` | read | Clone the repository |
+| `metadata` | read | List repositories and branches |
+| `repository_hooks` | write | Create the push webhook |
+| `statuses` | write | Report build status on commits (`update-commit-status`) |
+| `administration` | write | Repository administration |
+
+Subscribed event: `push`.
+
+### GitLab and Gitea
+
+Both use a standard OAuth application that you create on your side and register in Nexploy. GitLab is requested with the `api read_api read_repository` scopes. For a self-hosted GitLab, tick the custom URL option; for Gitea, the instance URL is always required.
 
 ## Webhooks
 
-When connecting a repository, Nexploy automatically configures a webhook. On every push to the tracked branch, a build is triggered. Each webhook is protected by a secret to validate the authenticity of the calls.
+When a repository is connected, Nexploy automatically configures a webhook on it. On every push to the tracked branch, a build is triggered through the `webhook-clone` node. Each webhook is protected by a secret, and every incoming call has its signature verified before anything runs.
+
+## Beyond cloning
+
+Once connected, the provider is also used by the pipeline nodes that write back to it: `update-commit-status`, `create-release`, `git-tag`, `merge-branch` and `cherry-pick-commit`. All three providers support them.

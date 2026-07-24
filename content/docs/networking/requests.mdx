@@ -1,0 +1,42 @@
+---
+title: Requêtes HTTP
+description: Flux en direct du trafic qui passe par Traefik
+---
+
+La page **Requêtes** affiche en direct chaque requête HTTP traitée par Traefik — le trafic de vos applications déployées comme celui de Nexploy lui-même. C'est le moyen le plus rapide de répondre à « mon domaine est-il réellement routé ? » sans ouvrir un shell sur le serveur.
+
+## Fonctionnement
+
+Traefik est configuré pour écrire son access log en **JSON**. Nexploy lit en continu le flux de logs de ce conteneur, parse chaque ligne et pousse le résultat vers l'interface via SSE. Rien n'est interrogé en polling, et rien n'est stocké sur disque par Nexploy.
+
+Chaque requête affiche :
+
+| Champ | Signification |
+|---|---|
+| `timestamp` | Le moment où Traefik l'a traitée |
+| `method`, `path`, `protocol` | La requête elle-même |
+| `status` | Le code de réponse |
+| `duration` | Le temps de traitement |
+| `size` | La taille de la réponse |
+| `requestHost` | L'en-tête `Host` — lequel de vos domaines a été appelé |
+| `routerName`, `serviceName` | Quel routeur Traefik a matché, et quel service a répondu |
+| `clientHost`, `clientAddr` | La provenance |
+| `userAgent` | Le client |
+
+## Tampon en mémoire
+
+Le flux ne conserve que les **500 dernières requêtes** en mémoire, les plus récentes en premier. C'est une vue en direct, pas une archive : redémarrer `docker-api` la vide, et il n'y a ni rétention ni recherche sur le trafic passé. Pour des access logs de long terme, lisez directement le fichier de log de Traefik.
+
+## Si rien n'apparaît
+
+- **Pas de conteneur Traefik** — Nexploy vérifie que le conteneur existe avant de s'y attacher. S'il ne tourne pas encore, la page attend et se rattache d'elle-même dès que Traefik démarre.
+- **Pas de trafic** — le tampon ne se remplit qu'à mesure que les requêtes arrivent. Appelez un de vos domaines et elle apparaît immédiatement.
+- **Requêtes qui contournent Traefik** — tout ce qui atteint un conteneur directement sur un port publié ne passe pas par le proxy, et n'apparaît donc jamais ici.
+
+## Lire un problème de routage
+
+Une requête qui arrive sur Traefik mais pas sur votre application se voit généralement ici avant partout ailleurs :
+
+- **404 sans `routerName`** — aucun routeur n'a matché, le domaine n'est pas rattaché à un conteneur. Voir [Domaines](/networking/domains).
+- **502 / 503 avec un `serviceName`** — le routeur a matché mais le conteneur ne répond pas sur le port configuré.
+- **Rien du tout** — le DNS ne pointe pas sur cette machine, ou la requête n'a jamais atteint le port 80/443.

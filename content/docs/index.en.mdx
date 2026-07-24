@@ -3,7 +3,7 @@ title: Introduction
 description: Nexploy — self-hosted deployment platform for Docker
 ---
 
-**Nexploy** is a **self-hosted** deployment platform for Docker. It automatically deploys your applications from your Git repositories (GitHub / GitLab) to Docker containers, with automatic HTTPS thanks to Traefik.
+**Nexploy** is a **self-hosted** deployment platform for Docker. It automatically deploys your applications from your Git repositories (GitHub / GitLab / Gitea) to Docker containers, with automatic HTTPS thanks to Traefik.
 
 <Callout title="The concept">
   Vercel or Netlify, but self-hosted and Docker-based — you keep full control of
@@ -24,9 +24,11 @@ description: Nexploy — self-hosted deployment platform for Docker
 
 | Feature | Description |
 |---|---|
-| Git integration | Deployment from GitHub and GitLab via OAuth |
-| Build pipeline | Resumable, step-by-step builds, live logs |
+| Git integration | Deployment from GitHub, GitLab and Gitea |
+| Build pipeline | Durable node graph, live logs per node |
 | Visual pipeline editor | Node system to create custom workflows |
+| Deployment stages | Staging, production… each with its own pipeline, variables and host |
+| Organizations | Repositories grouped per team, with dedicated roles |
 | Docker management | Containers, images, volumes, networks, Docker Swarm |
 | Traefik reverse proxy | Automatic routing + Let's Encrypt SSL |
 | Real-time monitoring | Container stats, logs, events via SSE |
@@ -34,8 +36,10 @@ description: Nexploy — self-hosted deployment platform for Docker
 | Browser terminal | Container shell access via WebSocket |
 | 2FA authentication | TOTP + backup codes |
 | AI assistant | Multi-provider chat connected to your resources (MCP) |
-| Multi-host environments | Local, TCP or SSH |
+| Multi-host environments | Local socket, TCP or TCP with TLS |
 | Backups | Scheduled backups to an S3 bucket |
+| Automatic cleanup | Scheduled prune of images, volumes, containers and build cache |
+| Private registries | Push and pull images from your own registries |
 | Cloudflare DNS | DNS record management |
 | Multi-language | English and French |
 

@@ -1,4 +1,4 @@
 {
   "title": "Gestion Docker",
-  "pages": ["containers", "images", "volumes-networks", "swarm"]
+  "pages": ["containers", "images", "volumes-networks", "swarm", "events"]
 }

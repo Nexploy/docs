@@ -1,0 +1,33 @@
+---
+title: Événements Docker
+description: Flux en direct de tout ce qui se passe sur le daemon Docker
+---
+
+La page **Événements** diffuse en direct le flux d'événements du daemon Docker — chaque conteneur qui démarre, chaque image téléchargée, chaque volume créé ou détruit, que cela vienne de Nexploy, d'un pipeline, ou de quelqu'un qui tape `docker` sur le serveur.
+
+C'est le flux que Nexploy utilise en interne pour garder conteneurs, images, volumes et réseaux synchronisés en temps réel, exposé brut pour les moments où vous avez besoin de voir l'ordre réel des événements.
+
+## Ce que contient une ligne
+
+| Colonne | Signification |
+|---|---|
+| **Timestamp** | Le moment où le daemon a émis l'événement |
+| **Type** | `container`, `image`, `network` ou `volume` |
+| **Action** | Ce qui s'est passé — `create`, `start`, `die`, `destroy`, `pull`, `connect`… |
+| **Nom / ID** | Le nom de la ressource, ou les 12 premiers caractères de son ID |
+
+Les actions sont colorées selon leur nature : une série d'événements destructifs (`die`, `kill`, `destroy`, `remove`) se distingue immédiatement d'une séquence de déploiement normale.
+
+## Filtrage
+
+Filtrez par type de ressource, et cherchez par nom ou par action. Les deux s'appliquent à l'ensemble du flux et réinitialisent la pagination. La taille de page est ajustable, jusqu'à tout afficher.
+
+## Uniquement du direct
+
+Le flux démarre vide et se remplit à mesure que les événements arrivent — il n'est pas rempli rétroactivement avec l'historique, et recharger la page repart d'un flux neuf. Docker lui-même ne conserve pas d'archive d'événements interrogeable au-delà d'une courte fenêtre : voyez-la comme une console en direct plutôt que comme un journal d'audit.
+
+## À quoi ça sert
+
+- Confirmer qu'un déploiement a bien recréé un conteneur, et dans quel ordre.
+- Repérer un conteneur qui redémarre en boucle : un cycle `die` → `start` répété saute aux yeux.
+- Voir les changements faits en dehors de Nexploy sur le même hôte.

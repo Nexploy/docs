@@ -1,0 +1,42 @@
+---
+title: HTTP requests
+description: Live stream of the traffic going through Traefik
+---
+
+The **Requests** page shows, live, every HTTP request Traefik handles — your deployed applications' traffic and Nexploy's own. It's the fastest way to answer "is my domain actually being routed?" without opening a shell on the server.
+
+## How it works
+
+Traefik is configured to write its access log as **JSON**. Nexploy reads that container's log stream continuously, parses each line, and pushes the result to the interface over SSE. Nothing is polled and nothing is stored on disk by Nexploy.
+
+Each request shows:
+
+| Field | Meaning |
+|---|---|
+| `timestamp` | When Traefik handled it |
+| `method`, `path`, `protocol` | The request itself |
+| `status` | The response code |
+| `duration` | How long it took |
+| `size` | Response size |
+| `requestHost` | The `Host` header — which of your domains was hit |
+| `routerName`, `serviceName` | Which Traefik router matched, and which service answered |
+| `clientHost`, `clientAddr` | Where it came from |
+| `userAgent` | The client |
+
+## In-memory buffer
+
+The stream keeps only the **last 500 requests** in memory, newest first. It is a live view, not an archive: restarting `docker-api` empties it, and there is no retention or search over past traffic. For long-term access logs, read Traefik's log file directly.
+
+## If nothing shows up
+
+- **No Traefik container** — Nexploy checks that the container exists before attaching. If it isn't running yet, the page waits and reattaches on its own once Traefik starts.
+- **No traffic** — the buffer only fills as requests come in. Hit one of your domains and it appears immediately.
+- **Requests bypassing Traefik** — anything reaching a container on a published port directly never goes through the proxy, so it never appears here.
+
+## Reading a routing problem
+
+A request landing on Traefik but not on your app usually shows itself here before anywhere else:
+
+- **404 with no `routerName`** — no router matched, the domain isn't attached to a container. See [Domains](/en/networking/domains).
+- **502 / 503 with a `serviceName`** — the router matched but the container isn't answering on the configured port.
+- **Nothing at all** — DNS isn't pointing at this machine, or the request never reached port 80/443.

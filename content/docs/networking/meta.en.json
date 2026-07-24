@@ -1,4 +1,4 @@
 {
   "title": "Networking & domains",
-  "pages": ["traefik-ssl", "domains", "cloudflare"]
+  "pages": ["traefik-ssl", "domains", "cloudflare", "requests"]
 }

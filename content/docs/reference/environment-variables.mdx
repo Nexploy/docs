@@ -19,7 +19,7 @@ Seul `nexploy-cli` (l'outil de recovery, distinct de l'application) persiste une
 | `DATABASE_URL` | Chaîne de connexion PostgreSQL |
 | `ENCRYPTION_KEY` | Clé AES-256-CBC (32 octets hex) de chiffrement des variables d'env — sans défaut, générer avec `openssl rand -hex 32` |
 | `DOCKER_API_URL` | URL du service `docker-api` |
-| `DOCKER_API_KEY` | Clé envoyée à `docker-api` pour s'authentifier — générée par `pnpm db:seed` |
+| `NEXPLOY_API_KEY` | Clé envoyée en `Authorization: Bearer` à `docker-api` pour s'authentifier — générée par `pnpm db:seed`, même valeur que `NEXPLOY_API_KEY` côté docker-api |
 | `INNGEST_BASE_URL` | URL du serveur Inngest self-hosté (SDK y envoie les événements / sync les fonctions) |
 | `INNGEST_EVENT_KEY` | Clé d'événement Inngest |
 | `INNGEST_SIGNING_KEY` | Clé de signature Inngest (vérifie les requêtes entre l'app et le serveur Inngest) |
@@ -29,7 +29,6 @@ Seul `nexploy-cli` (l'outil de recovery, distinct de l'application) persiste une
 | `TRAEFIK_STATIC_CONFIG_PATH` | Chemin où écrire `traefik.yml` au premier démarrage si absent (optionnel — n'active le rendu que sur les installs via `install.sh`) |
 | `TRAEFIK_USE_TLS` | `false` pour rendre `traefik.yml` sans HTTPS/ACME (mode IP sans domaine) — défaut `true` |
 | `ACME_EMAIL` | Email Let's Encrypt utilisé pour rendre `traefik.yml` quand `TRAEFIK_USE_TLS` n'est pas `false` |
-| `NEXPLOY_API_KEY` | Clé stable pour les appels internes (optionnel — auto-générée par process si absente) |
 | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `OPENROUTER_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY` | Clés des providers IA (optionnel, uniquement si l'assistant IA est activé) |
 | `LOG_LEVEL` | Niveau de log (ex. `info`) |
 
@@ -41,7 +40,7 @@ Seul `nexploy-cli` (l'outil de recovery, distinct de l'application) persiste une
 | `LOG_LEVEL` | Niveau de log |
 | `DOCKER_SOCKET` | Chemin du socket Docker (défaut `/var/run/docker.sock`) |
 | `NEXPLOY_API_URL` | URL de l'app nexploy, pour rappeler l'app |
-| `NEXPLOY_API_KEY` | Secret partagé attendu par `docker-api` — même valeur que `DOCKER_API_KEY` côté nexploy. Si absent, `docker-api` le récupère automatiquement au démarrage via `GET /api/internal/docker-api-key` (authentifié par `ENCRYPTION_KEY`) — c'est le comportement recommandé, ne le fixez pas manuellement |
+| `NEXPLOY_API_KEY` | Secret partagé attendu par `docker-api` — même valeur que `NEXPLOY_API_KEY` côté nexploy. Si absent, `docker-api` le récupère automatiquement au démarrage via `GET /api/internal/docker-api-key` (authentifié par `ENCRYPTION_KEY`) — c'est ce que font les images Docker, ne le fixez pas manuellement dans ce cas |
 | `ENCRYPTION_KEY` | Même valeur que côté `apps/nexploy/.env` — utilisée pour authentifier la récupération automatique de `NEXPLOY_API_KEY` |
 | `TRAEFIK_CONTAINER_NAME` | Nom du conteneur Traefik à piloter (défaut `nexploy_traefik`) |
 | `TRAEFIK_NETWORK_NAME` | Réseau Docker que Traefik surveille (défaut `nexploy_traefik_network`) |
@@ -52,6 +51,10 @@ Seul `nexploy-cli` (l'outil de recovery, distinct de l'application) persiste une
   Elle sert à déchiffrer vos variables d'environnement de dépôt. Sa perte rend vos secrets irrécupérables.
 </Callout>
 
-<Callout type="warn" title="DOCKER_API_KEY et NEXPLOY_API_KEY doivent être identiques">
-  Ce sont deux noms différents pour le même secret : `DOCKER_API_KEY` côté `apps/nexploy/.env` et `NEXPLOY_API_KEY` côté `apps/docker-api/.env`. Un décalage entre les deux fait échouer tous les appels entre les deux services avec une erreur `401`.
+<Callout type="warn" title="NEXPLOY_API_KEY doit être identique des deux côtés">
+  C'est le **même** nom de variable et le **même** secret dans `apps/nexploy/.env` et `apps/docker-api/.env`. Un décalage entre les deux fait échouer tous les appels entre les deux services avec une erreur `401`.
+</Callout>
+
+<Callout type="warn" title="ENCRYPTION_KEY doit aussi être identique des deux côtés">
+  `docker-api` l'utilise comme `x-internal-secret` pour rappeler nexploy (vérification des clés API et récupération automatique de la clé au démarrage). Une valeur différente casse les deux.
 </Callout>

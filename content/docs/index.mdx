@@ -3,7 +3,7 @@ title: Introduction
 description: Nexploy — plateforme de déploiement auto-hébergée pour Docker
 ---
 
-**Nexploy** est une plateforme de déploiement **auto-hébergée** pour Docker. Elle déploie automatiquement vos applications depuis vos dépôts Git (GitHub / GitLab) vers des conteneurs Docker, avec HTTPS automatique grâce à Traefik.
+**Nexploy** est une plateforme de déploiement **auto-hébergée** pour Docker. Elle déploie automatiquement vos applications depuis vos dépôts Git (GitHub / GitLab / Gitea) vers des conteneurs Docker, avec HTTPS automatique grâce à Traefik.
 
 <Callout title="Le concept">
   Vercel ou Netlify, mais auto-hébergé et basé sur Docker — vous gardez le
@@ -12,6 +12,7 @@ description: Nexploy — plateforme de déploiement auto-hébergée pour Docker
 
 ## Pourquoi Nexploy ?
 
+- **Déploiement continu** — un `git push` déclenche automatiquement le build et le déploiement.
 - **HTTPS automatique** — certificats SSL Let's Encrypt gérés par Traefik.
 - **Contrôle total** — vous hébergez tout, aucune donnée ne quitte votre serveur.
 - **Gestion Docker complète** — conteneurs, images, volumes, réseaux et Swarm depuis une seule interface.
@@ -23,9 +24,11 @@ description: Nexploy — plateforme de déploiement auto-hébergée pour Docker
 
 | Fonctionnalité | Description |
 |---|---|
-| Intégration Git | Déploiement depuis GitHub et GitLab via OAuth |
-| Pipeline de build | Builds résumables, étape par étape, logs en direct |
+| Intégration Git | Déploiement depuis GitHub, GitLab et Gitea |
+| Pipeline de build | Graphe de nœuds durable, logs en direct nœud par nœud |
 | Éditeur de pipeline visuel | Système de nœuds pour créer des workflows sur mesure |
+| Stages de déploiement | Staging, production… chacun avec son pipeline, ses variables et son hôte |
+| Organisations | Regroupement des dépôts par équipe, avec rôles dédiés |
 | Gestion Docker | Conteneurs, images, volumes, réseaux, Docker Swarm |
 | Reverse proxy Traefik | Routage automatique + SSL Let's Encrypt |
 | Monitoring temps réel | Stats conteneurs, logs, événements via SSE |
@@ -33,8 +36,10 @@ description: Nexploy — plateforme de déploiement auto-hébergée pour Docker
 | Terminal navigateur | Accès shell aux conteneurs via WebSocket |
 | Authentification 2FA | TOTP + codes de secours |
 | Assistant IA | Chat multi-providers connecté à vos ressources (MCP) |
-| Environnements multi-hôtes | Local, TCP ou SSH |
+| Environnements multi-hôtes | Socket local, TCP ou TCP avec TLS |
 | Sauvegardes | Sauvegardes planifiées vers un bucket S3 |
+| Nettoyage automatique | Prune planifié des images, volumes, conteneurs et cache de build |
+| Registries privées | Push et pull d'images depuis vos propres registries |
 | DNS Cloudflare | Gestion des enregistrements DNS |
 | Multi-langue | Anglais et Français |
 

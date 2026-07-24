@@ -11,8 +11,8 @@ description: Variables d'environnement principales et premier démarrage
 | `ENCRYPTION_KEY` | Clé de chiffrement AES-256-CBC (32 octets hex) des variables d'env — sans défaut, à générer avec `openssl rand -hex 32` |
 | `BETTER_AUTH_SECRET` | Secret d'authentification — sans défaut, à générer avec `openssl rand -hex 32` |
 | `BETTER_AUTH_URL` | URL publique de l'application |
-| `DOCKER_API_KEY` | Clé que **nexploy** envoie à `docker-api` pour s'authentifier — générée par `pnpm db:seed` |
-| `NEXPLOY_API_KEY` | Clé que **docker-api** attend (côté `docker-api`, même valeur que `DOCKER_API_KEY`) et utilise pour rappeler nexploy |
+| `DOCKER_API_URL` | URL du service `docker-api` |
+| `NEXPLOY_API_KEY` | Clé partagée entre les deux services — **nexploy** l'envoie à `docker-api`, qui l'attend et l'utilise pour rappeler nexploy. Même nom de variable et même valeur dans les deux `.env`, générée par `pnpm db:seed` |
 | `INNGEST_BASE_URL` | URL du serveur Inngest self-hosté |
 | `INNGEST_EVENT_KEY` | Clé d'événement Inngest |
 | `INNGEST_SIGNING_KEY` | Clé de signature Inngest |
@@ -20,12 +20,12 @@ description: Variables d'environnement principales et premier démarrage
 
 <Callout>La liste complète est disponible dans `apps/nexploy/.env.example` et `apps/docker-api/.env.example`.</Callout>
 
-En production, l'installeur (`install.sh`) génère automatiquement tous ces secrets et les passe directement à chaque conteneur au démarrage (`docker inspect nexploy_app` pour les consulter) — rien n'est écrit dans un fichier sur l'hôte. En développement, `BETTER_AUTH_SECRET` et `ENCRYPTION_KEY` doivent être générés manuellement, tandis que `DOCKER_API_KEY`/`NEXPLOY_API_KEY` sont produits par `pnpm --filter=nexploy db:seed` — voir [Installation](/getting-started/installation) pour le détail.
+En production, l'installeur (`install.sh`) génère automatiquement tous ces secrets et les passe directement à chaque conteneur au démarrage (`docker inspect nexploy_app` pour les consulter) — rien n'est écrit dans un fichier sur l'hôte. En développement, `BETTER_AUTH_SECRET` et `ENCRYPTION_KEY` doivent être générés manuellement, tandis que `NEXPLOY_API_KEY` est produite par `pnpm --filter=nexploy db:seed` — voir [Installation](/getting-started/installation) pour le détail.
 
 ## Premier démarrage
 
 Au premier lancement, l'application vous redirige vers `/setup` où vous créez votre compte administrateur. Vous pourrez ensuite :
 
-1. Connecter un **provider Git** (GitHub ou GitLab).
+1. Connecter un **provider Git** (GitHub, GitLab ou Gitea).
 2. Configurer un ou plusieurs **environnements** (hôtes Docker).
 3. Créer votre premier **dépôt** à déployer.

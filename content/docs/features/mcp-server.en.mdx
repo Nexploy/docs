@@ -1,0 +1,68 @@
+---
+title: MCP server
+description: Connect Cursor, Claude Desktop or any MCP client to your infrastructure
+---
+
+Beyond the [built-in AI assistant](/en/features/ai-assistant), Nexploy exposes its own **Model Context Protocol server**. Any external MCP client — Cursor, Claude Desktop, and others — can connect to it and act on your infrastructure with the same tools the built-in assistant uses.
+
+Everything is configured from **Administration → AI → MCP**.
+
+## Endpoint
+
+The server listens on a single endpoint, shown on that page:
+
+```
+https://<your-domain>/api/mcp
+```
+
+It speaks streamable HTTP. Authentication is accepted either as an OAuth session (the client is sent to `/signin`) or as an API key.
+
+## Generating a key
+
+Click **Generate API key**, give it a name identifying the client (`Cursor`, `Claude Desktop`…), and copy the key — it is shown **once and never again**. Keys are prefixed `nxp_mcp_` and **never expire**; revoke them from the same page when a client no longer needs access.
+
+A key is tied to the user who created it and inherits that user's permissions, both instance and organization. Generating one requires the `mcpKey:create` permission, held by the `admin` instance role only.
+
+Send it as the `x-api-key` header:
+
+```json
+{
+  "mcpServers": {
+    "nexploy": {
+      "url": "https://<your-domain>/api/mcp",
+      "headers": { "x-api-key": "nxp_mcp_…" }
+    }
+  }
+}
+```
+
+## Available tools
+
+Around 65 tools are exposed, grouped by domain:
+
+| Group | Examples |
+|---|---|
+| **Containers** | `listContainers`, `inspectContainer`, `createContainer`, `recreateContainer`, `containerAction`, `getContainerLogs`, `execInContainer`, `renameContainer`, `pause`/`unpauseContainer` |
+| **Images** | `listImages`, `inspectImage`, `pullImage`, `tagImage`, `scanImage`, `deleteImages`, `pruneImages` |
+| **Volumes** | `listVolumes`, `inspectVolume`, `createVolume`, `deleteVolumes`, `pruneVolumes` |
+| **Networks** | `listNetworks`, `inspectNetwork`, `createNetwork`, `deleteNetworks` |
+| **Compose** | `listComposeStacks`, `listComposeContainers`, `getComposeStatus`, `deployCompose`, `validateComposeSyntax`, `composeAction` |
+| **Repositories** | `listRepositories`, `getRepository`, `analyzeRepository`, `triggerRepositoryBuild`, `listBuilds`, `cancelBuild`, `removeBuild`, `setEnvVariables`, `deleteRepository` |
+| **Pipelines** | `listPipelineNodes`, `getPipelineNodeDetail`, `savePipeline`, `getBuildNodeLogs` |
+| **Environments** | `listEnvironments`, `createEnvironment`, `updateEnvironment`, `useEnvironment`, `setDefaultEnvironment`, `deleteEnvironment` |
+| **Registries** | `listRegistries`, `createRegistry`, `updateRegistry`, `deleteRegistry` |
+| **SSL** | `listSslCertificates`, `createLetsEncryptCertificate`, `createCustomCertificate`, `deleteSslCertificate` |
+| **Swarm** | `listSwarmNodes`, `listSwarmServices`, `createSwarmService`, `scaleSwarmService`, `swarmNodeAction`, `initSwarm`, `leaveSwarm` |
+
+## Restricting what it can do
+
+From **Administration → AI → Settings**, each group can be turned off independently — images, volumes, networks, compose, repositories, registries, SSL, environments, Swarm operations, and `execInContainer` on its own. A disabled group simply isn't registered on the server, so the client never even sees those tools.
+
+Two instance-wide switches matter here:
+
+- **Enable MCP server** — when off, `/api/mcp` rejects every request, cutting off all external clients at once.
+- **Require confirmation for destructive actions** — when on, a `requestConfirmation` tool is registered and the model must call it, then stop, before any delete, remove, stop or prune. You confirm before it proceeds.
+
+<Callout type="warn" title="An MCP key is a Nexploy key">
+  API keys are session-backed: a key sent as `x-api-key` authenticates against the rest of the Nexploy API too, not only `/api/mcp`. Treat one as you would the password of the account that created it.
+</Callout>

@@ -15,19 +15,30 @@ Chaque dépôt appartient à une [organisation](/core-concepts/organizations), q
 4. Ajoutez vos **variables d'environnement** (chiffrées).
 5. Définissez le **domaine** et le routage Traefik.
 
+## Stages de déploiement
+
+Un dépôt se déploie à travers des **stages** (par exemple *staging* puis *production*). Chaque stage possède ses propres :
+
+- **pipeline** — son graphe de nœuds ;
+- **variables d'environnement** ;
+- **environnement Docker** — l'hôte sur lequel il déploie ;
+- **versions** — les images enregistrées par `save-version`.
+
+Un stage peut être marqué **production**, et être **protégé** par un autre stage : il n'accepte alors un déploiement qu'une fois son stage prérequis réussi. Le nœud `trigger-stage-build` enchaîne le pipeline d'un stage sur le suivant.
+
 ## Cycle de vie d'un build
 
 Chaque déploiement passe par les statuts suivants :
 
 ```
-QUEUED → BUILDING → DEPLOYING → COMPLETED
-                              ↘ FAILED / CANCELLED
+QUEUED → BUILDING → COMPLETED
+                  ↘ FAILED / CANCELLED
 ```
 
-Les builds sont **résumables** : en cas d'échec, la reprise repart de la dernière étape réussie.
+Un build échoué n'est pas repris là où il s'est arrêté — le relancer rejoue le pipeline depuis le début. Voir [Pipeline de build](/core-concepts/build-pipeline).
 
 ## Variables d'environnement
 
-- Ajoutées par dépôt, **chiffrées au repos**.
-- Injectées dans un fichier `.env` au moment du build.
+- Ajoutées par stage d'un dépôt, **chiffrées au repos**.
+- Injectées automatiquement dans `deploy-compose` et `create-container` au moment du déploiement.
 - Jamais exposées en clair dans l'interface après enregistrement.

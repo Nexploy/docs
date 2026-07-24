@@ -5,9 +5,16 @@ description: Login methods, user management and data security
 
 ## Login methods
 
-- **Email / password**
-- **OAuth** — GitHub and GitLab
-- **Two-factor authentication (2FA)** — TOTP with backup codes
+- **Email / password** — the only way to sign in to the application.
+- **Two-factor authentication (2FA)** — TOTP with backup codes.
+- **API keys** — for programmatic access, see [API keys](/en/security/api-keys).
+
+<Callout type="warn" title="No OAuth login, and no open sign-up">
+  GitHub / GitLab / Gitea OAuth is only used to connect your Git repositories,
+  not to sign in to Nexploy. Open sign-up is disabled: the first admin account
+  is created through `/setup`, and every other account from
+  **Administration → Users**.
+</Callout>
 
 ## User management
 

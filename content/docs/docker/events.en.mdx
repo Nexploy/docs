@@ -1,0 +1,33 @@
+---
+title: Docker events
+description: Live feed of everything happening on the Docker daemon
+---
+
+The **Events** page streams the Docker daemon's event feed as it happens — every container that starts, every image that gets pulled, every volume created or destroyed, whether it came from Nexploy, from a pipeline, or from someone typing `docker` on the server.
+
+It's the same feed Nexploy uses internally to keep containers, images, volumes and networks in sync in real time, exposed raw for when you need to see the order things actually occurred in.
+
+## What a line contains
+
+| Column | Meaning |
+|---|---|
+| **Timestamp** | When the daemon emitted the event |
+| **Type** | `container`, `image`, `network` or `volume` |
+| **Action** | What happened — `create`, `start`, `die`, `destroy`, `pull`, `connect`… |
+| **Name / ID** | The resource's name, or the first 12 characters of its ID |
+
+Actions are colour-coded by nature, so a run of destructive events (`die`, `kill`, `destroy`, `remove`) stands out from a normal deployment sequence.
+
+## Filtering
+
+Filter by resource type, and search by name or action. Both apply to the whole feed and reset pagination. Page size is adjustable, up to showing everything received.
+
+## Live only
+
+The feed starts empty and fills as events arrive — it is not backfilled with history, and reloading the page starts a fresh feed. Docker itself keeps no queryable event archive beyond a short window, so treat this as a live console rather than an audit log.
+
+## What it's good for
+
+- Confirming a deployment actually recreated a container, and in what order.
+- Spotting a container that keeps restarting: a repeating `die` → `start` cycle is obvious here.
+- Seeing changes made outside Nexploy on the same host.

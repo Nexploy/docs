@@ -1,4 +1,4 @@
 {
   "title": "Concepts clés",
-  "pages": ["repositories", "build-pipeline", "environments", "organizations"]
+  "pages": ["repositories", "build-pipeline", "versions", "environments", "organizations"]
 }

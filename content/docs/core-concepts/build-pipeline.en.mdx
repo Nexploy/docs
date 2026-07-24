@@ -1,21 +1,39 @@
 ---
 title: Build pipeline
-description: Durable and resumable steps powered by Inngest
+description: Node graph executed by Inngest on every deployment
 ---
 
-The default build pipeline, powered by Inngest, runs durable and resumable steps:
+A deployment doesn't run a fixed list of steps: it executes the **node graph** configured for the stage being deployed, orchestrated by Inngest. Each node is an Inngest step, so the run is durable and streams its logs live.
 
-1. **Clone repository** — Git clone with the OAuth token.
-2. **Prepare Dockerfile** — copy and validate the Dockerfile.
-3. **Write env file** — create the `.env` from the encrypted variables.
-4. **Build Docker image** — build the image (logs streamed live).
-5. **Deploy container** — create and start the container with Traefik routing.
-6. **Cleanup** — remove temporary files.
-7. **Finalize logs** — close the build.
+## What runs
 
-**Characteristics:**
+Every stage of a repository has its own pipeline, edited in the [node editor](/en/pipelines/visual-editor). When a build starts, the current graph is **snapshotted** onto the build, so editing the pipeline afterwards never rewrites the history of past builds.
 
-- Real-time logs streamed via SSE.
-- Resume from any failed step.
-- Cancellable while building.
-- Optional Docker **no-cache** build.
+The orchestrator walks the graph, running each node once all of its upstream nodes are done and passing their outputs downstream. A branch whose condition isn't met is marked *skipped*, along with everything after it.
+
+## Starting from a template
+
+Two ready-made templates are available in the editor, to avoid starting from an empty canvas:
+
+| Template | Nodes |
+|---|---|
+| **Dockerfile** | `clone-repository` → `build-docker-image` → `create-container` |
+| **Docker Compose** | `clone-repository` → `validate-compose` → `deploy-compose` → `clean-workdir`, with `save-version` on the side |
+
+Both are just starting points — every node can be added, removed or rewired. The full list is in the [node catalog](/en/pipelines/node-types).
+
+## Build statuses
+
+```
+QUEUED → BUILDING → COMPLETED
+                  ↘ FAILED / CANCELLED
+```
+
+Each node also carries its own status and duration, displayed live on the graph while the build runs.
+
+## Characteristics
+
+- Logs streamed in real time via SSE, per node.
+- Cancellable while running.
+- A failed build is **not** resumed step by step: the pipeline stops, and re-running it replays the graph from the start.
+- Repository environment variables are injected automatically into `deploy-compose` and `create-container`.

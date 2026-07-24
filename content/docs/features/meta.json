@@ -5,6 +5,8 @@
     "monitoring",
     "registries",
     "backups",
-    "ai-assistant"
+    "cleanup",
+    "ai-assistant",
+    "mcp-server"
   ]
 }

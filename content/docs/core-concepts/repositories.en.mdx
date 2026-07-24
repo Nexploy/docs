@@ -15,19 +15,30 @@ Every repository belongs to an [organization](/en/core-concepts/organizations), 
 4. Add your **environment variables** (encrypted).
 5. Define the **domain** and the Traefik routing.
 
+## Deployment stages
+
+A repository is deployed through **stages** (for example *staging* then *production*). Each stage carries its own:
+
+- **pipeline** — its own node graph;
+- **environment variables**;
+- **Docker environment** — the host it deploys to;
+- **versions** — the images saved by `save-version`.
+
+A stage can be flagged as **production**, and can be **protected** by another stage: it then only accepts a deployment once its prerequisite stage has succeeded. The `trigger-stage-build` node chains one stage's pipeline into the next.
+
 ## Build lifecycle
 
 Each deployment goes through the following statuses:
 
 ```
-QUEUED → BUILDING → DEPLOYING → COMPLETED
-                              ↘ FAILED / CANCELLED
+QUEUED → BUILDING → COMPLETED
+                  ↘ FAILED / CANCELLED
 ```
 
-Builds are **resumable**: on failure, they resume from the last successful step.
+A failed build is not resumed from where it stopped — re-running it replays the pipeline from the start. See [Build pipeline](/en/core-concepts/build-pipeline).
 
 ## Environment variables
 
-- Added per repository, **encrypted at rest**.
-- Injected into a `.env` file at build time.
+- Added per stage of a repository, **encrypted at rest**.
+- Injected automatically into `deploy-compose` and `create-container` at deployment time.
 - Never displayed in plain text in the interface after being saved.

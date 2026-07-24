@@ -1,17 +1,40 @@
 ---
 title: Intégration Git
-description: Connexion à GitHub et GitLab via OAuth et webhooks
+description: Connecter GitHub, GitLab et Gitea, et déclencher les builds depuis les webhooks
 ---
 
-Nexploy se connecte à vos comptes GitHub et GitLab via OAuth pour cloner vos dépôts et écouter les événements de push.
+Nexploy se connecte à vos comptes Git pour cloner vos dépôts et écouter les événements de push. Les providers se configurent une fois par instance depuis **Administration → Intégrations**, puis chaque utilisateur y connecte son propre compte.
 
 ## Providers supportés
 
-| Provider | Scope OAuth requis |
-|---|---|
-| **GitHub** | `repo` (accès complet aux dépôts) |
-| **GitLab** | `api` (accès API) |
+| Provider | Type d'intégration | Ce que vous fournissez |
+|---|---|---|
+| **GitHub** | GitHub App | Rien — Nexploy génère l'App depuis un manifeste en un clic (compte personnel ou organisation) |
+| **GitLab** | Application OAuth | `Client ID`, `Client secret`, et une URL personnalisée pour une instance auto-hébergée |
+| **Gitea** | Application OAuth | `Client ID`, `Client secret`, et l'URL de votre instance |
+
+### GitHub
+
+L'intégration GitHub est une **GitHub App**, pas une application OAuth classique. Nexploy construit lui-même le manifeste de l'App et vous envoie sur GitHub pour confirmer sa création ; les identifiants reviennent automatiquement. L'App demande :
+
+| Permission | Niveau | Pourquoi |
+|---|---|---|
+| `contents` | lecture | Cloner le dépôt |
+| `metadata` | lecture | Lister les dépôts et les branches |
+| `repository_hooks` | écriture | Créer le webhook de push |
+| `statuses` | écriture | Remonter le statut de build sur les commits (`update-commit-status`) |
+| `administration` | écriture | Administration du dépôt |
+
+Événement souscrit : `push`.
+
+### GitLab et Gitea
+
+Les deux utilisent une application OAuth standard que vous créez de votre côté et déclarez dans Nexploy. GitLab est demandé avec les scopes `api read_api read_repository`. Pour un GitLab auto-hébergé, cochez l'option d'URL personnalisée ; pour Gitea, l'URL de l'instance est toujours requise.
 
 ## Webhooks
 
-Lors de la connexion d'un dépôt, Nexploy configure automatiquement un webhook. À chaque push sur la branche suivie, un build est déclenché. Chaque webhook est protégé par un secret pour valider l'authenticité des appels.
+À la connexion d'un dépôt, Nexploy y configure automatiquement un webhook. À chaque push sur la branche suivie, un build est déclenché via le nœud `webhook-clone`. Chaque webhook est protégé par un secret, et la signature de chaque appel entrant est vérifiée avant toute exécution.
+
+## Au-delà du clone
+
+Une fois connecté, le provider sert aussi aux nœuds de pipeline qui écrivent vers lui : `update-commit-status`, `create-release`, `git-tag`, `merge-branch` et `cherry-pick-commit`. Les trois providers les supportent.
