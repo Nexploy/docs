@@ -28,14 +28,20 @@ Un utilisateur ayant le rôle d'instance `admin` accède à toutes les organisat
 ## Rôles d'organisation
 
 - **`member`** — consulte les dépôts, lance des builds, gère les conteneurs de l'organisation. Ne peut ni créer ni supprimer de dépôt, ni modifier les variables d'environnement.
-- **`admin`** — gère les dépôts, pipelines, variables d'environnement, domaines et déploiements. Invite et retire des membres.
-- **`owner`** — tout ce que peut faire un `admin`, plus le renommage et la suppression de l'organisation.
+- **`admin`** — gère les dépôts, pipelines, variables d'environnement, domaines et déploiements. Invite et retire des membres, et peut renommer l'organisation.
+- **`owner`** — tout ce que peut faire un `admin`, plus la modification des rôles des membres et la suppression de l'organisation.
+
+<Callout type="warn" title="Le rôle owner ne se transmet pas">
+  Les seuls rôles attribuables sont `member` et `admin`, à l'invitation comme au
+  changement de rôle. L'`owner` est le compte qui a créé l'organisation, et le
+  reste : il n'existe pas de transfert de propriété dans l'application.
+</Callout>
 
 ## Inviter un membre
 
 Les invitations se font **dans l'application**, sans email.
 
-1. Ouvrez l'organisation, puis **Membres**.
+1. Dans le sélecteur d'organisation de la barre latérale, ouvrez le menu **⋯** de l'organisation, puis **Membres**.
 2. Cliquez sur **Inviter un membre** et saisissez l'adresse email.
 3. Choisissez le rôle (`member` ou `admin`).
 
@@ -51,19 +57,76 @@ Les invitations expirent au bout de 7 jours. Une organisation accepte jusqu'à 1
 
 ## Changer d'organisation
 
-Le sélecteur situé dans la barre latérale, à côté du logo, bascule d'une organisation à l'autre. L'organisation active détermine celle à laquelle sont rattachés les nouveaux dépôts.
+Le sélecteur situé dans la barre latérale, à côté du logo, bascule d'une organisation à l'autre. C'est aussi depuis ce menu que tout se gère : le sous-menu **⋯** de chaque organisation donne accès aux membres, au renommage et à la suppression, et l'entrée en bas de liste crée une organisation.
+
+L'organisation active détermine deux choses :
+
+- la liste des **dépôts affichés** — vous ne voyez que ceux de l'organisation active ;
+- l'organisation à laquelle sont **rattachés les nouveaux dépôts**.
 
 ## Créer une organisation
 
-Depuis **Organisations → Créer une organisation**. Le rôle d'instance `developer` ou `admin` est requis ; un `guest` ne peut pas en créer.
+Depuis le sélecteur de la barre latérale, **Créer une organisation**. Le rôle d'instance `developer` ou `admin` est requis ; un `guest` ne peut pas en créer.
 
 Le créateur en devient automatiquement `owner`.
 
+## Quitter une organisation
+
+Nul besoin d'un administrateur pour sortir d'une organisation à laquelle vous avez été invité. Dans le sélecteur de la barre latérale, ouvrez le menu **⋯** de l'organisation et choisissez **Quitter l'organisation**.
+
+Quitter révoque votre accès immédiatement : ses dépôts, builds et conteneurs disparaissent de votre vue. Rien n'est supprimé — l'organisation et ses ressources restent intactes pour les membres restants. Y revenir nécessite une nouvelle invitation.
+
+Si l'organisation quittée était l'organisation active, Nexploy bascule automatiquement sur une autre de vos organisations.
+
+<Callout type="warn" title="Un propriétaire unique ne peut pas quitter">
+  L'option est masquée pour une organisation dont vous êtes le seul `owner` :
+  elle se retrouverait sans propriétaire, et la propriété ne se transmet pas.
+  Supprimez plutôt l'organisation (après avoir déplacé ses dépôts). Votre
+  organisation personnelle, elle, ne peut être ni quittée ni supprimée : c'est
+  votre point de chute permanent.
+</Callout>
+
+## Déplacer un dépôt vers une autre organisation
+
+Un dépôt n'est pas figé dans son organisation d'origine : depuis l'onglet **Paramètres** du dépôt, la section de déplacement le transfère vers une autre organisation.
+
+Le transfert exige des droits **des deux côtés** : la permission de modifier le dépôt dans son organisation actuelle, et celle d'y créer des dépôts dans l'organisation cible — autrement dit être `admin` ou `owner` sur les deux (un `admin` d'instance passe outre).
+
+<Callout type="warn" title="Le compte Git ne suit pas les membres">
+  Le dépôt conserve le compte Git avec lequel il a été connecté, celui de
+  l'utilisateur qui l'a créé. Après un transfert, les membres de l'organisation
+  cible accèdent au dépôt mais les clones continuent d'utiliser ces
+  identifiants-là ; si ce compte est déconnecté, le dépôt doit être relié à un
+  autre compte Git.
+</Callout>
+
 ## Garde-fous
 
-- Le **dernier `owner`** d'une organisation ne peut être ni retiré, ni rétrogradé, ni la quitter. Transférez d'abord la propriété.
-- Une organisation **possédant encore des dépôts** ne peut pas être supprimée. Réassignez-les ou supprimez-les au préalable.
+- Le **dernier `owner`** d'une organisation ne peut être ni retiré, ni rétrogradé, ni la quitter — voir [Quitter une organisation](#quitter-une-organisation).
+- Une organisation **possédant encore des dépôts** ne peut pas être supprimée. Déplacez-les vers une autre organisation ou supprimez-les au préalable.
+- L'**organisation personnelle** ne peut être ni renommée, ni ouverte à des invités, ni quittée, ni supprimée — voir ci-dessous.
 
-## Migration depuis une version antérieure
+## Organisation personnelle
 
-À la mise à jour, chaque utilisateur existant reçoit automatiquement une organisation personnelle dont il est `owner`, et ses dépôts y sont rattachés. Aucune action manuelle n'est nécessaire et aucun dépôt n'est perdu.
+Chaque utilisateur reçoit automatiquement une organisation personnelle à la création de son compte, nommée d'après lui et dont il est `owner`. C'est aussi ce qui s'est produit à la mise à jour depuis une version antérieure : chaque utilisateur existant a reçu la sienne, avec ses dépôts rattachés, sans action manuelle ni perte.
+
+Elle est volontairement **mono-occupant et immuable** : c'est votre espace de travail, pas une équipe que vous administrez. Quatre opérations y sont donc bloquées, côté serveur et pas seulement dans l'interface :
+
+| Bloqué | Pourquoi |
+|---|---|
+| **Renommage** | Son identité est liée au compte auquel elle appartient |
+| **Invitation d'un membre** | Elle reste la vôtre seule ; collaborez via une organisation classique |
+| **Page Membres** | Elle n'aurait qu'une ligne, la vôtre, et aucune action possible |
+| **La quitter** | Vous en êtes l'unique `owner`, et la propriété ne se transmet pas |
+| **Suppression** | C'est le point de chute de vos dépôts et de votre session |
+
+Un `admin` d'instance n'y échappe pas : la restriction vaut pour l'organisation personnelle de n'importe qui, y compris depuis un compte administrateur.
+
+Comme aucune de ces actions ne s'applique, le menu **⋯** n'apparaît pas du tout à côté de l'organisation personnelle dans le sélecteur : elle ne se sélectionne, rien de plus. L'URL de sa page Membres renvoie une 404. Pour travailler à plusieurs, créez une organisation classique et déplacez-y les dépôts.
+
+<Callout type="warn" title="Supprimer un utilisateur supprime son organisation personnelle">
+  Et la suppression d'une organisation entraîne celle de ses dépôts en cascade.
+  Ce chemin ne passe pas par le garde-fou ci-dessus : avant de supprimer un
+  compte depuis **Administration → Utilisateurs**, déplacez les dépôts encore
+  présents dans son organisation personnelle.
+</Callout>

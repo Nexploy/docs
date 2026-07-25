@@ -14,3 +14,21 @@ An **environment** represents a Docker host to deploy to. Nexploy can drive mult
 | **TCP with TLS** | Remote TCP connection authenticated with a client certificate (cert, key and TLS CA) |
 
 This lets you separate your environments (e.g. *staging* and *production*) and target the desired host in your pipelines via the `set-environment` node.
+
+## Who can manage them
+
+Environments are **instance-level infrastructure**, not resources of an organization — they are governed by the instance role alone.
+
+| Action | Required role |
+|---|---|
+| List environments, switch the active one | `guest`, `developer`, `admin` |
+| Create, edit, delete, set as default | `admin` |
+
+A `developer` deploys to the existing hosts and switches between them freely, but cannot change how Nexploy connects to a Docker daemon. The restriction covers every entry point: the sidebar switcher, the server actions, and the `createEnvironment` / `updateEnvironment` / `setDefaultEnvironment` / `deleteEnvironment` [MCP tools](/en/features/mcp-server).
+
+<Callout type="warn" title="Why it is admin-only">
+  An environment holds the address of a Docker daemon and its TLS client
+  certificate. Editing one redirects every subsequent deployment to another host;
+  deleting one detaches the stages and versions that pointed at it. Both are
+  infrastructure decisions, not deployment ones.
+</Callout>
