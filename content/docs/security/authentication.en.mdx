@@ -10,8 +10,9 @@ description: Login methods, user management and data security
 - **API keys** — for programmatic access, see [API keys](/en/security/api-keys).
 
 <Callout type="warn" title="No OAuth login, and no open sign-up">
-  GitHub / GitLab / Gitea OAuth is only used to connect your Git repositories,
-  not to sign in to Nexploy. Open sign-up is disabled: the first admin account
+  Git provider OAuth (GitHub, GitLab, Gitea, Bitbucket, Azure Repos) is only
+  used to connect your repositories, not to sign in to Nexploy.
+  Open sign-up is disabled: the first admin account
   is created through `/setup`, and every other account from
   **Administration → Users**.
 </Callout>
@@ -24,7 +25,7 @@ This instance role (`guest`, `developer`, `admin`) authorizes a **type** of acti
 
 ## Data security
 
-- **Encrypted environment variables** at rest (AES-256-CBC).
+- **Encrypted environment variables** at rest (AES-256-GCM — authenticated encryption: any tampering with the ciphertext is detected on decryption).
 - **OAuth tokens** stored securely with automatic refresh.
 - **Webhook secrets** validating callbacks from Git providers.
 - **CSRF protection** and session-based authentication.

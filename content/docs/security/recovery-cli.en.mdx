@@ -104,10 +104,10 @@ sudo nexploy admin reset-password
 ```
 
 <Callout type="warn">
-Only works for accounts with an email/password login. OAuth-only accounts
-(GitHub/GitLab) have no `credential`-type `account` row — the command fails
-explicitly in that case rather than creating a password on an account that
-doesn't use one.
+Only works for accounts with an email/password login — the only way to sign in
+to Nexploy, so the normal case. An account with no `credential`-type `account`
+row makes the command fail explicitly, rather than creating a password on an
+account that doesn't use one.
 </Callout>
 
 ## Audit log

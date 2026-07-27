@@ -17,7 +17,7 @@ Seul `nexploy-cli` (l'outil de recovery, distinct de l'application) persiste une
 | `BETTER_AUTH_URL` | URL de base utilisée par Better Auth (callbacks/cookies) |
 | `TRUSTED_ORIGINS` | Liste d'origines de confiance additionnelles, séparées par des virgules (optionnel) |
 | `DATABASE_URL` | Chaîne de connexion PostgreSQL |
-| `ENCRYPTION_KEY` | Clé AES-256-CBC (32 octets hex) de chiffrement des variables d'env — sans défaut, générer avec `openssl rand -hex 32` |
+| `ENCRYPTION_KEY` | Secret dont dérive (scrypt) la clé AES-256-GCM de chiffrement des variables d'env — sans défaut, générer avec `openssl rand -hex 32` |
 | `DOCKER_API_URL` | URL du service `docker-api` |
 | `NEXPLOY_API_KEY` | Clé envoyée en `Authorization: Bearer` à `docker-api` pour s'authentifier — générée par `pnpm db:seed`, même valeur que `NEXPLOY_API_KEY` côté docker-api |
 | `INNGEST_BASE_URL` | URL du serveur Inngest self-hosté (SDK y envoie les événements / sync les fonctions) |

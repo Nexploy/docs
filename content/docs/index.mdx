@@ -3,7 +3,7 @@ title: Introduction
 description: Nexploy — plateforme de déploiement auto-hébergée pour Docker
 ---
 
-**Nexploy** est une plateforme de déploiement **auto-hébergée** pour Docker. Elle déploie automatiquement vos applications depuis vos dépôts Git (GitHub / GitLab / Gitea) vers des conteneurs Docker, avec HTTPS automatique grâce à Traefik.
+**Nexploy** est une plateforme de déploiement **auto-hébergée** pour Docker. Elle déploie automatiquement vos applications depuis vos dépôts Git (GitHub / GitLab / Gitea / Bitbucket / Azure Repos) vers des conteneurs Docker, avec HTTPS automatique grâce à Traefik.
 
 <Callout title="Le concept">
   Vercel ou Netlify, mais auto-hébergé et basé sur Docker — vous gardez le
@@ -24,7 +24,7 @@ description: Nexploy — plateforme de déploiement auto-hébergée pour Docker
 
 | Fonctionnalité | Description |
 |---|---|
-| Intégration Git | Déploiement depuis GitHub, GitLab et Gitea |
+| Intégration Git | Déploiement depuis GitHub, GitLab, Gitea, Bitbucket et Azure Repos |
 | Pipeline de build | Graphe de nœuds durable, logs en direct nœud par nœud |
 | Éditeur de pipeline visuel | Système de nœuds pour créer des workflows sur mesure |
 | Stages de déploiement | Staging, production… chacun avec son pipeline, ses variables et son hôte |
@@ -32,7 +32,7 @@ description: Nexploy — plateforme de déploiement auto-hébergée pour Docker
 | Gestion Docker | Conteneurs, images, volumes, réseaux, Docker Swarm |
 | Reverse proxy Traefik | Routage automatique + SSL Let's Encrypt |
 | Monitoring temps réel | Stats conteneurs, logs, événements via SSE |
-| Variables chiffrées | Chiffrement AES-256-CBC au repos |
+| Variables chiffrées | Chiffrement AES-256-GCM au repos |
 | Terminal navigateur | Accès shell aux conteneurs via WebSocket |
 | Authentification 2FA | TOTP + codes de secours |
 | Assistant IA | Chat multi-providers connecté à vos ressources (MCP) |

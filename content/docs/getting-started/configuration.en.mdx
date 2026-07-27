@@ -8,7 +8,7 @@ description: Main environment variables and first launch
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string |
-| `ENCRYPTION_KEY` | AES-256-CBC encryption key (32 hex bytes) for env variables — no default, generate with `openssl rand -hex 32` |
+| `ENCRYPTION_KEY` | Secret the AES-256-GCM env-variable key is derived from (scrypt) — no default, generate with `openssl rand -hex 32` |
 | `BETTER_AUTH_SECRET` | Authentication secret — no default, generate with `openssl rand -hex 32` |
 | `BETTER_AUTH_URL` | Public URL of the application |
 | `DOCKER_API_URL` | URL of the `docker-api` service |
@@ -26,6 +26,6 @@ In production, the installer (`install.sh`) generates all of these secrets autom
 
 On first launch, the app redirects you to `/setup` where you create your administrator account. You can then:
 
-1. Connect a **Git provider** (GitHub, GitLab or Gitea).
+1. Connect a **Git provider** (GitHub, GitLab, Gitea, Bitbucket or Azure Repos).
 2. Configure one or more **environments** (Docker hosts).
 3. Create your first **repository** to deploy.

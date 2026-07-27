@@ -3,7 +3,7 @@ title: Introduction
 description: Nexploy — self-hosted deployment platform for Docker
 ---
 
-**Nexploy** is a **self-hosted** deployment platform for Docker. It automatically deploys your applications from your Git repositories (GitHub / GitLab / Gitea) to Docker containers, with automatic HTTPS thanks to Traefik.
+**Nexploy** is a **self-hosted** deployment platform for Docker. It automatically deploys your applications from your Git repositories (GitHub / GitLab / Gitea / Bitbucket / Azure Repos) to Docker containers, with automatic HTTPS thanks to Traefik.
 
 <Callout title="The concept">
   Vercel or Netlify, but self-hosted and Docker-based — you keep full control of
@@ -24,7 +24,7 @@ description: Nexploy — self-hosted deployment platform for Docker
 
 | Feature | Description |
 |---|---|
-| Git integration | Deployment from GitHub, GitLab and Gitea |
+| Git integration | Deployment from GitHub, GitLab, Gitea, Bitbucket and Azure Repos |
 | Build pipeline | Durable node graph, live logs per node |
 | Visual pipeline editor | Node system to create custom workflows |
 | Deployment stages | Staging, production… each with its own pipeline, variables and host |
@@ -32,7 +32,7 @@ description: Nexploy — self-hosted deployment platform for Docker
 | Docker management | Containers, images, volumes, networks, Docker Swarm |
 | Traefik reverse proxy | Automatic routing + Let's Encrypt SSL |
 | Real-time monitoring | Container stats, logs, events via SSE |
-| Encrypted variables | AES-256-CBC encryption at rest |
+| Encrypted variables | AES-256-GCM encryption at rest |
 | Browser terminal | Container shell access via WebSocket |
 | 2FA authentication | TOTP + backup codes |
 | AI assistant | Multi-provider chat connected to your resources (MCP) |

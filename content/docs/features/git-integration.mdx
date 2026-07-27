@@ -1,6 +1,6 @@
 ---
 title: Intégration Git
-description: Connecter GitHub, GitLab et Gitea, et déclencher les builds depuis les webhooks
+description: Connecter GitHub, GitLab, Gitea, Bitbucket et Azure Repos, et déclencher les builds depuis les webhooks
 ---
 
 Nexploy se connecte à vos comptes Git pour cloner vos dépôts et écouter les événements de push. Les providers se configurent une fois par instance depuis **Administration → Intégrations**, puis chaque utilisateur y connecte son propre compte.
@@ -12,6 +12,8 @@ Nexploy se connecte à vos comptes Git pour cloner vos dépôts et écouter les 
 | **GitHub** | GitHub App | Rien — Nexploy génère l'App depuis un manifeste en un clic (compte personnel ou organisation) |
 | **GitLab** | Application OAuth | `Client ID`, `Client secret`, et une URL personnalisée pour une instance auto-hébergée |
 | **Gitea** | Application OAuth | `Client ID`, `Client secret`, et l'URL de votre instance |
+| **Bitbucket** | Consommateur OAuth | `Clé` et `Secret` du consommateur — Bitbucket Cloud uniquement |
+| **Azure Repos** | Inscription d'application Entra ID | `ID d'application`, `Valeur du secret client`, et l'`ID de locataire` pour une application mono-locataire |
 
 ### GitHub
 
@@ -29,12 +31,20 @@ L'intégration GitHub est une **GitHub App**, pas une application OAuth classiqu
 
 ### GitLab et Gitea
 
-Les deux utilisent une application OAuth standard que vous créez de votre côté et déclarez dans Nexploy. GitLab est demandé avec les scopes `api read_api read_repository`. Pour un GitLab auto-hébergé, cochez l'option d'URL personnalisée ; pour Gitea, l'URL de l'instance est toujours requise.
+Les deux utilisent une application OAuth standard que vous créez de votre côté et déclarez dans Nexploy. GitLab est demandé avec les scopes `api read_api read_repository`, Gitea avec `read:user write:repository write:organization`. Pour un GitLab auto-hébergé, cochez l'option d'URL personnalisée ; pour Gitea, l'URL de l'instance est toujours requise.
+
+### Bitbucket
+
+Créez un **consommateur OAuth** depuis Paramètres de l'espace de travail → Consommateurs OAuth, avec l'URL de rappel `{votre-domaine}/api/git/oauth/callback`. Les permissions se cochent sur le consommateur lui-même : Compte (Lecture), Dépôts (Lecture, Écriture, Administration), Webhooks (Lecture et écriture), Pull requests (Lecture). Seul **Bitbucket Cloud** est supporté — il n'y a pas d'URL d'instance à renseigner.
+
+### Azure Repos
+
+Créez une **inscription d'application** dans Microsoft Entra ID, avec l'URI de redirection (type Web) `{votre-domaine}/api/git/oauth/callback`. Dans Autorisations d'API, ajoutez Azure DevOps → `user_impersonation` puis accordez le consentement administrateur ; le jeton est demandé avec `offline_access` pour pouvoir être renouvelé. L'ID de locataire n'est requis que pour une application mono-locataire — laissez le champ vide pour une application multi-locataires.
 
 ## Webhooks
 
-À la connexion d'un dépôt, Nexploy y configure automatiquement un webhook. À chaque push sur la branche suivie, un build est déclenché via le nœud `webhook-clone`. Chaque webhook est protégé par un secret, et la signature de chaque appel entrant est vérifiée avant toute exécution.
+À la connexion d'un dépôt, Nexploy y configure automatiquement un webhook. À chaque push sur la branche suivie, un build est déclenché via le nœud `webhook-clone`. Chaque webhook est protégé par un secret et chaque appel entrant est authentifié avant toute exécution : signature HMAC pour GitHub, Gitea et Bitbucket, jeton de webhook pour GitLab, en-tête secret pour Azure Repos.
 
 ## Au-delà du clone
 
-Une fois connecté, le provider sert aussi aux nœuds de pipeline qui écrivent vers lui : `update-commit-status`, `create-release`, `git-tag`, `merge-branch` et `cherry-pick-commit`. Les trois providers les supportent.
+Une fois connecté, le provider sert aussi aux nœuds de pipeline qui écrivent vers lui. Les cinq providers exposent `update-commit-status` et `create-release` via leur API. Les nœuds `git-tag`, `merge-branch` et `cherry-pick-commit` passent par git lui-même avec les identifiants stockés : ils fonctionnent donc avec n'importe quel provider.

@@ -38,21 +38,22 @@ Send it as the `x-api-key` header:
 
 ## Available tools
 
-Around 65 tools are exposed, grouped by domain:
+68 tools are exposed, split across 12 groups:
 
-| Group | Examples |
+| Group | Tools |
 |---|---|
-| **Containers** | `listContainers`, `inspectContainer`, `createContainer`, `recreateContainer`, `containerAction`, `getContainerLogs`, `execInContainer`, `renameContainer`, `pause`/`unpauseContainer` |
-| **Images** | `listImages`, `inspectImage`, `pullImage`, `tagImage`, `scanImage`, `deleteImages`, `pruneImages` |
-| **Volumes** | `listVolumes`, `inspectVolume`, `createVolume`, `deleteVolumes`, `pruneVolumes` |
-| **Networks** | `listNetworks`, `inspectNetwork`, `createNetwork`, `deleteNetworks` |
-| **Compose** | `listComposeStacks`, `listComposeContainers`, `getComposeStatus`, `deployCompose`, `validateComposeSyntax`, `composeAction` |
-| **Repositories** | `listRepositories`, `getRepository`, `analyzeRepository`, `triggerRepositoryBuild`, `listBuilds`, `cancelBuild`, `removeBuild`, `setEnvVariables`, `deleteRepository` |
-| **Pipelines** | `listPipelineNodes`, `getPipelineNodeDetail`, `savePipeline`, `getBuildNodeLogs` |
-| **Environments** | `listEnvironments`, `createEnvironment`, `updateEnvironment`, `useEnvironment`, `setDefaultEnvironment`, `deleteEnvironment` |
-| **Registries** | `listRegistries`, `createRegistry`, `updateRegistry`, `deleteRegistry` |
-| **SSL** | `listSslCertificates`, `createLetsEncryptCertificate`, `createCustomCertificate`, `deleteSslCertificate` |
-| **Swarm** | `listSwarmNodes`, `listSwarmServices`, `createSwarmService`, `scaleSwarmService`, `swarmNodeAction`, `initSwarm`, `leaveSwarm` |
+| **Containers** (10) | `listContainers`, `inspectContainer`, `getContainerLogs`, `containerAction`, `pauseContainer`, `unpauseContainer`, `renameContainer`, `recreateContainer`, `createContainer`, `execInContainer` |
+| **Images** (7) | `listImages`, `inspectImage`, `pullImage`, `tagImage`, `deleteImages`, `pruneImages`, `scanImage` |
+| **Volumes** (5) | `listVolumes`, `inspectVolume`, `createVolume`, `deleteVolumes`, `pruneVolumes` |
+| **Networks** (4) | `listNetworks`, `inspectNetwork`, `createNetwork`, `deleteNetworks` |
+| **Compose** (6) | `listComposeStacks`, `getComposeStatus`, `listComposeContainers`, `validateComposeSyntax`, `deployCompose`, `composeAction` |
+| **Repositories** (9) | `listRepositories`, `getRepository`, `listBuilds`, `getBuildNodeLogs`, `triggerRepositoryBuild`, `setEnvVariables`, `cancelBuild`, `removeBuild`, `deleteRepository` |
+| **Pipelines** (4) | `listPipelineNodes`, `getPipelineNodeDetail`, `analyzeRepository`, `savePipeline` |
+| **Environments** (6) | `listEnvironments`, `useEnvironment`, `createEnvironment`, `updateEnvironment`, `setDefaultEnvironment`, `deleteEnvironment` |
+| **Registries** (4) | `listRegistries`, `createRegistry`, `updateRegistry`, `deleteRegistry` |
+| **SSL** (4) | `listSslCertificates`, `createLetsEncryptCertificate`, `createCustomCertificate`, `deleteSslCertificate` |
+| **Swarm** (8) | `listSwarmNodes`, `listSwarmServices`, `initSwarm`, `leaveSwarm`, `swarmNodeAction`, `createSwarmService`, `scaleSwarmService`, `removeSwarmServices` |
+| **Confirmation** (1) | `requestConfirmation` — the assistant calls it before any destructive action and waits for your approval |
 
 ## Restricting what it can do
 

@@ -1,6 +1,6 @@
 ---
 title: Git integration
-description: Connect GitHub, GitLab and Gitea, and trigger builds from webhooks
+description: Connect GitHub, GitLab, Gitea, Bitbucket and Azure Repos, and trigger builds from webhooks
 ---
 
 Nexploy connects to your Git accounts to clone your repositories and listen to push events. Providers are configured once per instance from **Administration → Integrations**, then each user connects their own account to it.
@@ -12,6 +12,8 @@ Nexploy connects to your Git accounts to clone your repositories and listen to p
 | **GitHub** | GitHub App | Nothing — Nexploy generates the App from a manifest in one click (personal account or organization) |
 | **GitLab** | OAuth application | `Client ID`, `Client secret`, and a custom base URL for a self-hosted instance |
 | **Gitea** | OAuth application | `Client ID`, `Client secret`, and the base URL of your instance |
+| **Bitbucket** | OAuth consumer | The consumer `Key` and `Secret` — Bitbucket Cloud only |
+| **Azure Repos** | Entra ID app registration | `Application ID`, `Client secret value`, and the `Tenant ID` for a single-tenant app |
 
 ### GitHub
 
@@ -29,12 +31,20 @@ Subscribed event: `push`.
 
 ### GitLab and Gitea
 
-Both use a standard OAuth application that you create on your side and register in Nexploy. GitLab is requested with the `api read_api read_repository` scopes. For a self-hosted GitLab, tick the custom URL option; for Gitea, the instance URL is always required.
+Both use a standard OAuth application that you create on your side and register in Nexploy. GitLab is requested with the `api read_api read_repository` scopes, Gitea with `read:user write:repository write:organization`. For a self-hosted GitLab, tick the custom URL option; for Gitea, the instance URL is always required.
+
+### Bitbucket
+
+Create an **OAuth consumer** from Workspace settings → OAuth consumers, with the callback URL `{your-domain}/api/git/oauth/callback`. Permissions are ticked on the consumer itself: Account (Read), Repositories (Read, Write, Admin), Webhooks (Read and write), Pull requests (Read). Only **Bitbucket Cloud** is supported — there is no instance URL to provide.
+
+### Azure Repos
+
+Create an **app registration** in Microsoft Entra ID, with the redirect URI (Web type) `{your-domain}/api/git/oauth/callback`. Under API permissions, add Azure DevOps → `user_impersonation` and grant admin consent; the token is requested with `offline_access` so it can be refreshed. The tenant ID is only required for a single-tenant app — leave the field empty for a multi-tenant one.
 
 ## Webhooks
 
-When a repository is connected, Nexploy automatically configures a webhook on it. On every push to the tracked branch, a build is triggered through the `webhook-clone` node. Each webhook is protected by a secret, and every incoming call has its signature verified before anything runs.
+When a repository is connected, Nexploy automatically configures a webhook on it. On every push to the tracked branch, a build is triggered through the `webhook-clone` node. Each webhook is protected by a secret, and every incoming call is authenticated before anything runs: HMAC signature for GitHub, Gitea and Bitbucket, webhook token for GitLab, secret header for Azure Repos.
 
 ## Beyond cloning
 
-Once connected, the provider is also used by the pipeline nodes that write back to it: `update-commit-status`, `create-release`, `git-tag`, `merge-branch` and `cherry-pick-commit`. All three providers support them.
+Once connected, the provider is also used by the pipeline nodes that write back to it. All five providers expose `update-commit-status` and `create-release` through their API. The `git-tag`, `merge-branch` and `cherry-pick-commit` nodes go through git itself using the stored credentials, so they work with any provider.

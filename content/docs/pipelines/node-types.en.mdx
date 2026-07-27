@@ -17,7 +17,7 @@ Clones the Git repository linked to the repository. **Start node**: always the f
 - **Outputs**: `workDir`, `branch`, `commitHash`, `commitMessage`.
 
 ### `webhook-clone`
-Variant of `clone-repository` triggered by a push event received via GitHub/GitLab webhook. **Start node.**
+Variant of `clone-repository` triggered by a push event received via the repository's Git provider webhook. **Start node.**
 - **Configuration**: `branchFilter` (only triggers if the pushed branch matches), `submodules`.
 - **Outputs**: `workDir`, `branch`, `commitHash`, `commitMessage`.
 
@@ -42,12 +42,12 @@ Applies a specific commit onto the current branch.
 - **Configuration**: `commitHash`, `targetBranch`, `noCommit` (apply only the diff without committing), `remote`.
 
 ### `create-release`
-Creates a release on GitHub, GitLab or Gitea.
+Creates a release on the repository's Git provider — all five providers are supported.
 - **Configuration**: `tagName`, `targetBranch`, `releaseTitle`, `releaseNotes`, `draft`, `prerelease`.
 - **Outputs**: `releaseId`, `releaseUrl`.
 
 ### `update-commit-status`
-Updates the commit status on the Git provider (pending/success/failure), visible directly in the GitHub, GitLab or Gitea PR/MR.
+Updates the commit status on the Git provider (pending/success/failure), visible directly on the pull request / merge request.
 - **Configuration**: `state` (`pending` / `success` / `failure` / `error`), `context` (check name, default `nexploy/pipeline`), `description`.
 
 ## Build & validation

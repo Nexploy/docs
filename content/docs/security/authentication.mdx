@@ -10,8 +10,9 @@ description: Méthodes de connexion, gestion des utilisateurs et sécurité des 
 - **Clés API** — pour l'accès programmatique, voir [Clés API](/security/api-keys).
 
 <Callout type="warn" title="Pas de connexion OAuth, et pas d'inscription ouverte">
-  Le OAuth GitHub / GitLab / Gitea sert uniquement à connecter vos dépôts Git,
-  pas à se connecter à Nexploy. L'inscription libre est désactivée : le premier
+  Le OAuth des providers Git (GitHub, GitLab, Gitea, Bitbucket, Azure Repos)
+  sert uniquement à connecter vos dépôts, pas à se connecter à Nexploy.
+  L'inscription libre est désactivée : le premier
   compte administrateur se crée via `/setup`, et les suivants depuis
   **Administration → Utilisateurs**.
 </Callout>
@@ -24,7 +25,7 @@ Ce rôle d'instance (`guest`, `developer`, `admin`) autorise un **type** d'actio
 
 ## Sécurité des données
 
-- **Variables d'environnement chiffrées** au repos (AES-256-CBC).
+- **Variables d'environnement chiffrées** au repos (AES-256-GCM — chiffrement authentifié : toute altération du chiffré est détectée au déchiffrement).
 - **Tokens OAuth** stockés de façon sécurisée avec refresh automatique.
 - **Secrets de webhook** validant les callbacks des providers Git.
 - **Protection CSRF** et authentification par session.
