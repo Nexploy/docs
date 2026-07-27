@@ -1,0 +1,59 @@
+---
+title: Certificats SSL
+description: Gérer les certificats Let's Encrypt et les certificats personnalisés depuis l'administration
+---
+
+Un domaine servi en HTTPS a besoin d'un certificat. Nexploy en tient un inventaire, alimenté depuis **Administration → Certificats SSL**, et chaque [domaine](/networking/domains) en HTTPS pointe vers une entrée de cet inventaire.
+
+Deux types coexistent :
+
+| Type | Origine du certificat | Renouvellement |
+|---|---|---|
+| **Let's Encrypt** | Obtenu par Traefik via ACME au premier accès au domaine | Automatique, par Traefik |
+| **Personnalisé** | Le PEM et la clé privée que vous collez | À votre charge |
+
+## Ajouter un certificat Let's Encrypt
+
+Renseignez un **nom** (libellé d'inventaire), le **domaine**, un **email** et l'acceptation des conditions d'utilisation de Let's Encrypt.
+
+Créer l'entrée n'émet aucun certificat : elle déclare simplement que ce domaine doit passer par le resolver ACME. Le certificat est réellement obtenu par Traefik la première fois que le domaine est routé, ce qui suppose que le DNS pointe déjà vers l'instance et que le port 80 est joignable depuis l'extérieur — le resolver utilise le challenge HTTP sur l'entrypoint `web`.
+
+<Callout type="warn">
+L'email du compte ACME utilisé par Traefik est celui de la variable `ACME_EMAIL` de l'instance, rendue dans `traefik.yml` au démarrage — voir [Variables d'environnement](/reference/environment-variables). L'email saisi ici est conservé sur la fiche du certificat comme contact, mais ne change pas le compte ACME.
+</Callout>
+
+## Ajouter un certificat personnalisé
+
+Renseignez un **nom**, le **domaine**, puis collez le **certificat** et la **clé privée** au format PEM.
+
+Nexploy valide la paire avant d'enregistrer quoi que ce soit : un PEM illisible, une clé illisible ou une clé qui ne correspond pas au certificat sont rejetés avec une erreur explicite. La date d'expiration est lue dans le certificat et affichée dans le tableau.
+
+Une fois validé, les deux fichiers sont écrits dans le répertoire `certs/` du provider fichier Traefik et un fichier `nexploy-certs.yml` déclarant l'ensemble des certificats personnalisés est régénéré. Traefik le recharge à chaud, sans redémarrage. Si l'écriture échoue, l'entrée créée en base est supprimée — pas de certificat fantôme dans l'inventaire.
+
+## Lire le tableau
+
+- **Type** — badge `Let's Encrypt` ou `Custom`.
+- **Expiration** — pour un certificat personnalisé, la date lue dans le PEM : en orange à moins de 30 jours, en rouge une fois dépassée. Pour un certificat Let's Encrypt, la colonne affiche le renouvellement automatique, puisque c'est Traefik qui détient et renouvelle le certificat.
+
+Supprimer une entrée retire aussi les fichiers `.pem` / `.key` et régénère `nexploy-certs.yml` s'il s'agissait d'un certificat personnalisé.
+
+<Callout type="warn">
+La suppression n'est pas bloquée si un domaine utilise encore le certificat. Le router Traefik correspondant retombe alors sur le certificat par défaut de Traefik, et le navigateur affiche un avertissement. Vérifiez les domaines concernés avant de supprimer.
+</Callout>
+
+## Utiliser un certificat sur un domaine
+
+Dans le formulaire de domaine, activez **HTTPS** : un sélecteur de certificat apparaît et liste l'inventaire. Le choix décide de la configuration TLS du router Traefik — resolver `letsencrypt` pour une entrée Let's Encrypt, TLS avec les certificats du fichier pour une entrée personnalisée.
+
+Un certificat peut aussi être créé au fil d'un build avec le nœud [`add-ssl-certificate`](/pipelines/node-types), qui accepte les deux types et transmet le `certificateId` produit au nœud `add-domain` en aval.
+
+## Qui peut y toucher
+
+| Rôle | Lecture | Création / suppression |
+|---|---|---|
+| Instance — `admin`, `developer` | oui | oui |
+| Instance — `guest` | non | non |
+| Organisation — `owner`, `admin` | oui | oui |
+| Organisation — `member` | oui | non |
+
+Les mêmes opérations sont exposées à l'assistant IA via le groupe d'outils MCP `ssl` — voir [Serveur MCP](/features/mcp-server).

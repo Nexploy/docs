@@ -135,6 +135,11 @@ Supprime un conteneur, avec option de forcer la suppression même s'il est en co
 - **Configuration** : `containerId`, `force`.
 - **Entrées** : `containerId`.
 
+### `prune-containers`
+Supprime tous les conteneurs arrêtés de l'environnement cible pour libérer de l'espace disque.
+- **Configuration** : `olderThan` (ex. `24h`, ne cible que les conteneurs arrêtés depuis plus longtemps), `filter` (filtre par label, ex. `label=project=myapp`).
+- **Sorties** : `removedContainers`, `reclaimedSpace` (octets).
+
 ### `run-command-in-container`
 Exécute une commande shell à l'intérieur d'un conteneur en cours d'exécution (via `docker exec`).
 - **Configuration** : `containerId`, `command`, `workdir` (chemin absolu dans le conteneur, défaut `/app`), `user`, `continueOnError` (ne fait pas échouer le pipeline si la commande retourne un code non nul).
@@ -159,6 +164,11 @@ Crée un volume Docker nommé.
 ### `delete-volume`
 Supprime un volume Docker.
 - **Configuration** : `volumeName`, `force`.
+
+### `prune-volumes`
+Supprime les volumes Docker inutilisés de l'environnement cible pour libérer de l'espace disque.
+- **Configuration** : `all` (inclut aussi les volumes nommés, pas seulement les volumes anonymes, défaut désactivé), `filter` (filtre par label, ex. `label=project=myapp`).
+- **Sorties** : `removedVolumes`, `reclaimedSpace` (octets).
 
 ## Images Docker
 

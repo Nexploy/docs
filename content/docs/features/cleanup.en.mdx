@@ -22,6 +22,8 @@ Pick the categories to include — each one maps to a Docker prune:
   Image cleanup removes any image no container is running — including the images your past [versions](/en/core-concepts/versions) point to, which makes those rollbacks fail. Volume cleanup removes unattached volumes, which is where a database of a stopped stack lives. Both are opt-in decisions, not defaults to accept blindly; volumes are disabled out of the box for that reason.
 </Callout>
 
+The same four prunes are also available as pipeline nodes — `prune-containers`, `prune-images`, `prune-volumes` and `prune-build-cache` — when you would rather reclaim space at a precise point in a build than on a daily schedule. See the [node catalogue](/en/pipelines/node-types).
+
 ## Scheduling
 
 Cleanup runs **once a day**, at the hour you choose (UTC). It is driven by an Inngest function that sleeps until the scheduled hour, runs the selected prunes in order, then re-schedules itself — so there's no cron to install and a missed run doesn't pile up.

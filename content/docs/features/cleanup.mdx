@@ -22,6 +22,8 @@ Choisissez les catégories à inclure — chacune correspond à un prune Docker 
   Le nettoyage des images supprime toute image qu'aucun conteneur ne fait tourner — y compris celles vers lesquelles pointent vos [versions](/core-concepts/versions) passées, ce qui fait échouer ces rollbacks. Le nettoyage des volumes supprime les volumes non rattachés, c'est-à-dire l'endroit où vit la base de données d'une stack arrêtée. Ce sont deux décisions à prendre, pas des réglages à accepter les yeux fermés ; c'est pour cette raison que les volumes sont désactivés par défaut.
 </Callout>
 
+Ces quatre mêmes prunes existent aussi sous forme de nœuds de pipeline — `prune-containers`, `prune-images`, `prune-volumes` et `prune-build-cache` — quand vous préférez libérer de l'espace à un moment précis d'un build plutôt qu'une fois par jour. Voir le [catalogue des nœuds](/pipelines/node-types).
+
 ## Planification
 
 Le nettoyage tourne **une fois par jour**, à l'heure que vous choisissez (UTC). Il est piloté par une fonction Inngest qui dort jusqu'à l'heure prévue, exécute les prunes sélectionnés dans l'ordre, puis se replanifie — aucun cron à installer, et une exécution manquée ne s'accumule pas.

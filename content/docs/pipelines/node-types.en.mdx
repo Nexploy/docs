@@ -135,6 +135,11 @@ Deletes a container, with an option to force removal even while running, and to 
 - **Configuration**: `containerId`, `force`.
 - **Inputs**: `containerId`.
 
+### `prune-containers`
+Removes every stopped container on the target environment to free disk space.
+- **Configuration**: `olderThan` (e.g. `24h`, only targets containers stopped for longer than that), `filter` (label filter, e.g. `label=project=myapp`).
+- **Outputs**: `removedContainers`, `reclaimedSpace` (bytes).
+
 ### `run-command-in-container`
 Runs a shell command inside a running container (via `docker exec`).
 - **Configuration**: `containerId`, `command`, `workdir` (absolute path inside the container, default `/app`), `user`, `continueOnError` (don't fail the pipeline if the command returns a non-zero exit code).
@@ -159,6 +164,11 @@ Creates a named Docker volume.
 ### `delete-volume`
 Deletes a Docker volume.
 - **Configuration**: `volumeName`, `force`.
+
+### `prune-volumes`
+Removes unused Docker volumes on the target environment to free disk space.
+- **Configuration**: `all` (also include named volumes, not just anonymous ones, off by default), `filter` (label filter, e.g. `label=project=myapp`).
+- **Outputs**: `removedVolumes`, `reclaimedSpace` (bytes).
 
 ## Docker images
 

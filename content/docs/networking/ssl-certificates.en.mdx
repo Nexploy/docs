@@ -1,0 +1,59 @@
+---
+title: SSL certificates
+description: Manage Let's Encrypt and custom certificates from the admin area
+---
+
+A domain served over HTTPS needs a certificate. Nexploy keeps an inventory of them, filled from **Admin → SSL certificates**, and every HTTPS [domain](/en/networking/domains) points at one entry in that inventory.
+
+Two types coexist:
+
+| Type | Where the certificate comes from | Renewal |
+|---|---|---|
+| **Let's Encrypt** | Obtained by Traefik over ACME the first time the domain is hit | Automatic, by Traefik |
+| **Custom** | The PEM and private key you paste in | Yours to handle |
+
+## Adding a Let's Encrypt certificate
+
+Fill in a **name** (inventory label), the **domain**, an **email** and the acceptance of the Let's Encrypt Terms of Service.
+
+Creating the entry issues nothing: it only declares that this domain should go through the ACME resolver. The certificate is actually obtained by Traefik the first time the domain is routed, which assumes DNS already points at the instance and port 80 is reachable from the outside — the resolver uses the HTTP challenge on the `web` entrypoint.
+
+<Callout type="warn">
+The ACME account email Traefik uses is the instance's `ACME_EMAIL` variable, rendered into `traefik.yml` on boot — see [Environment variables](/en/reference/environment-variables). The email entered here is kept on the certificate record as a contact, but does not change the ACME account.
+</Callout>
+
+## Adding a custom certificate
+
+Fill in a **name**, the **domain**, then paste the **certificate** and the **private key** in PEM format.
+
+Nexploy validates the pair before storing anything: an unreadable PEM, an unreadable key, or a key that doesn't match the certificate are all rejected with an explicit error. The expiry date is read out of the certificate and shown in the table.
+
+Once validated, both files are written into the `certs/` directory of the Traefik file provider and a `nexploy-certs.yml` file declaring every custom certificate is regenerated. Traefik hot-reloads it, no restart. If the write fails, the record created in the database is deleted — no phantom entry in the inventory.
+
+## Reading the table
+
+- **Type** — a `Let's Encrypt` or `Custom` badge.
+- **Expiry** — for a custom certificate, the date read from the PEM: orange under 30 days, red once past. For a Let's Encrypt certificate the column shows automatic renewal instead, since Traefik holds and renews that certificate.
+
+Deleting an entry also removes the `.pem` / `.key` files and regenerates `nexploy-certs.yml` when it was a custom certificate.
+
+<Callout type="warn">
+Deletion is not blocked while a domain still uses the certificate. The matching Traefik router then falls back to Traefik's default certificate and browsers show a warning. Check the affected domains before deleting.
+</Callout>
+
+## Using a certificate on a domain
+
+In the domain form, turn **HTTPS** on: a certificate picker appears listing the inventory. The choice decides the TLS configuration of the Traefik router — the `letsencrypt` resolver for a Let's Encrypt entry, file-based TLS certificates for a custom one.
+
+A certificate can also be created during a build with the [`add-ssl-certificate`](/en/pipelines/node-types) node, which accepts both types and passes the resulting `certificateId` to a downstream `add-domain` node.
+
+## Who can touch it
+
+| Role | Read | Create / delete |
+|---|---|---|
+| Instance — `admin`, `developer` | yes | yes |
+| Instance — `guest` | no | no |
+| Organization — `owner`, `admin` | yes | yes |
+| Organization — `member` | yes | no |
+
+The same operations are exposed to the AI assistant through the `ssl` MCP tool group — see [MCP server](/en/features/mcp-server).
