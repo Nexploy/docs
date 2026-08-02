@@ -47,20 +47,23 @@ nexploy/
 ## Les nœuds de pipeline sont une bibliothèque à part
 
 Les nœuds ne vivent pas dans le dépôt de l'application : ils forment une bibliothèque
-autonome, **nexploy-nodes**, que Nexploy consomme.
+publiée sur npm, **@nexploy/nodes**, que Nexploy installe comme dépendance.
 
 ```
-nexploy-nodes/
-└── packages/
-    ├── node-core/   # Contrats, schémas Zod, helpers d'exécution — aucune dépendance
-    ├── node-ui/     # Adaptateur UI, primitives de glisser-déposer, thème
-    └── nodes/       # Les 62 nœuds intégrés
+@nexploy/nodes/
+└── src/
+    ├── core/    # Contrats, schémas Zod, helpers d'exécution — sans React
+    ├── ui/      # Adaptateur UI, primitives de glisser-déposer, thème
+    └── nodes/   # Les 62 nœuds intégrés
 ```
+
+La bibliothèque est publiée sur npm : Nexploy l'installe comme n'importe quelle
+dépendance (`@nexploy/nodes`), et non depuis les sources.
 
 Chaque nœud est un dossier unique et se décrit lui-même :
 
 ```
-packages/nodes/src/deploy-compose/
+src/nodes/deploy-compose/
 ├── node.ts        # descripteur — la source de vérité
 ├── executor.ts    # logique serveur
 ├── Config.tsx     # panneau de configuration
@@ -77,7 +80,7 @@ Un nœud ne connaît jamais l'application. Ce dont il a besoin lui est **inject�
 | Côté | Accès |
 |---|---|
 | Executor | `ctx.services.docker`, `.git`, `.build`, `.registry`, `.domain`, `.ssl`, `.version`… |
-| Panneau | Les hooks de `@nexploy/node-ui` — environnements, conteneurs, images, volumes, réseaux |
+| Panneau | Les hooks de `@nexploy/nodes/ui` — environnements, conteneurs, images, volumes, réseaux |
 
 C'est cette inversion qui rend la bibliothèque réutilisable : la même définition de nœud
 fonctionne quel que soit l'hôte qui fournit ces services.

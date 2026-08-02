@@ -47,20 +47,23 @@ nexploy/
 ## Pipeline nodes are a separate library
 
 Nodes do not live in the application repository. They form a standalone library,
-**nexploy-nodes**, that Nexploy consumes.
+**@nexploy/nodes**, published to npm and installed by Nexploy as a dependency.
 
 ```
-nexploy-nodes/
-└── packages/
-    ├── node-core/   # Contracts, Zod schemas, execution helpers — no dependencies
-    ├── node-ui/     # UI adapter, drag-and-drop primitives, theme
-    └── nodes/       # The 62 built-in nodes
+@nexploy/nodes/
+└── src/
+    ├── core/    # Contracts, Zod schemas, execution helpers — no React
+    ├── ui/      # UI adapter, drag-and-drop primitives, theme
+    └── nodes/   # The 62 built-in nodes
 ```
+
+The library is published to npm: Nexploy installs it like any other dependency
+(`@nexploy/nodes`) rather than from source.
 
 Every node is a single self-describing folder:
 
 ```
-packages/nodes/src/deploy-compose/
+src/nodes/deploy-compose/
 ├── node.ts        # descriptor — the source of truth
 ├── executor.ts    # server-side logic
 ├── Config.tsx     # configuration panel
@@ -77,7 +80,7 @@ A node never reaches into the application. What it needs is **injected**:
 | Side | Access |
 |---|---|
 | Executor | `ctx.services.docker`, `.git`, `.build`, `.registry`, `.domain`, `.ssl`, `.version`… |
-| Panel | Hooks from `@nexploy/node-ui` — environments, containers, images, volumes, networks |
+| Panel | Hooks from `@nexploy/nodes/ui` — environments, containers, images, volumes, networks |
 
 That inversion is what makes the library reusable: the same node definition works under
 any host that provides those services.
