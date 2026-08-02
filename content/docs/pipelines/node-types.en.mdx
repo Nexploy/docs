@@ -19,36 +19,39 @@ Clones the Git repository linked to the repository. **Start node**: always the f
 ### `webhook-clone`
 Variant of `clone-repository` triggered by a push event received via the repository's Git provider webhook. **Start node.**
 - **Configuration**: `branchFilter` (only triggers if the pushed branch matches), `submodules`.
-- **Outputs**: `workDir`, `branch`, `commitHash`, `commitMessage`.
+- **Outputs**: `workDir`, `branch`, `commitHash`, `commitMessage`, `event`, `tagName`, `targetBranch`, `mergeRequestAction`.
 
 ### `git-clone-extra`
 Clones a second Git repository, different from the main repository linked to the project (useful for shared config files, a satellite monorepo, etc.).
 - **Configuration**: `repoUrl` (HTTP(S) URL), `branch`, `targetDir` (relative subfolder to clone into), `token` (optional, for a private repo).
-- **Outputs**: `workDir`.
+- **Outputs**: `repoUrl`, `branch`, `targetDir`.
 
 ## Git (repository operations)
 
 ### `git-tag`
 Creates a Git tag on the current commit.
 - **Configuration**: `tagName`, `message` (optional), `remote` (default `origin`).
-- **Outputs**: `tagName`.
+- **Outputs**: `tagName`, `remote`.
 
 ### `merge-branch`
 Merges a source branch into a target branch.
 - **Configuration**: `sourceBranch`, `targetBranch`, `strategy` (`merge` or `squash`), `message`, `remote`, `push` (push the result to the remote).
+- **Outputs**: `workDir`, `targetBranch`, `sourceBranch`.
 
 ### `cherry-pick-commit`
 Applies a specific commit onto the current branch.
 - **Configuration**: `commitHash`, `targetBranch`, `noCommit` (apply only the diff without committing), `remote`.
+- **Outputs**: `workDir`, `commitHash`.
 
 ### `create-release`
 Creates a release on the repository's Git provider — all five providers are supported.
 - **Configuration**: `tagName`, `targetBranch`, `releaseTitle`, `releaseNotes`, `draft`, `prerelease`.
-- **Outputs**: `releaseId`, `releaseUrl`.
+- **Outputs**: `releaseId`, `releaseUrl`, `tagName`.
 
 ### `update-commit-status`
 Updates the commit status on the Git provider (pending/success/failure), visible directly on the pull request / merge request.
 - **Configuration**: `state` (`pending` / `success` / `failure` / `error`), `context` (check name, default `nexploy/pipeline`), `description`.
+- **Outputs**: `provider`, `state`, `sha`, `context`, `description`.
 
 ## Build & validation
 
@@ -56,11 +59,13 @@ Updates the commit status on the Git provider (pending/success/failure), visible
 Checks a Dockerfile's syntax without running a build. Useful early in a pipeline to fail fast (lint) before consuming build resources.
 - **Configuration**: `dockerfilePath` (relative path, default `Dockerfile`).
 - **Inputs**: `workDir`.
+- **Outputs**: `workDir`, `dockerfilePath`.
 
 ### `validate-compose`
 Checks a `docker-compose.yml` file's syntax without deploying.
 - **Configuration**: `composeFileName` (default `docker-compose.yml`), `composeFilePath` (optional relative folder), `noCache`.
 - **Inputs**: `workDir`.
+- **Outputs**: `workDir`, `composePath`.
 
 ### `build-docker-image`
 Builds a Docker image from a Dockerfile. **Use only for a Dockerfile-only deployment** — do not place it before `deploy-compose`, which handles its own build internally via `docker compose build`.
@@ -74,7 +79,7 @@ Builds a Docker image from a Dockerfile. **Use only for a Dockerfile-only deploy
 Pushes a built image to a registry (Docker Hub or a configured private registry).
 - **Configuration**: `registryId`, `registryName`, `imageName`.
 - **Inputs**: `imageName`.
-- **Outputs**: `pushedImageName`.
+- **Outputs**: `pushedImages`, `registryUrl`, `tag`.
 
 ### `pull-from-registry`
 Pulls an image from Docker Hub or a private registry, without going through a build.
@@ -83,12 +88,24 @@ Pulls an image from Docker Hub or a private registry, without going through a bu
 
 ## Deployment
 
+### `compose-build`
+Builds only the images of a `docker-compose` stack, without starting any container. Useful to separate build from start, or to chain a `compose-run` test step before deploying.
+- **Configuration**: `composeFileName` (default `docker-compose.yml`), `composeFilePath` (optional relative folder), `noCache` (rebuild without Docker cache).
+- **Inputs**: `workDir` (required).
+- **Outputs**: `projectName`, `composeFile`, `services`, `builtServices`, `composeConfig`.
+
 ### `deploy-compose`
 Deploys a `docker-compose` stack (runs `docker compose build` then `up -d` internally — no separate `build-docker-image` needed). Repository environment variables are injected automatically, merged with any received from an upstream node (`set-env-vars`, `fetch-secrets-*`), which take priority on duplicate keys.
 - **Configuration**: `composeFileName` (default `docker-compose.yml`), `composeFilePath` (optional relative folder), `noCache` (rebuild without Docker cache).
 - **Inputs**: `workDir` (required, must come from an upstream clone node).
-- **Outputs**: no data output, but supports an optional `save-version` attach-node on its bottom handle.
+- **Outputs**: `projectName`, `containers`, `composeConfig`. Supports an optional `save-version` attach node on its bottom handle.
 - **Security**: variables are written to a temporary `.env` file just before `up` (never present during `build`), and a `.dockerignore` excluding `.env`/`.env.*` is guaranteed on the build context.
+
+### `compose-up`
+Starts a stack already built by `compose-build`. It rebuilds nothing: it consumes the `composeFile` and `projectName` produced upstream.
+- **Configuration**: `recreate` (recreate containers, on by default), `removeOrphans` (remove orphan containers, on by default), `keepComposeFile` (keep the resolved compose file after start).
+- **Inputs**: `workDir`, `composeFile`, `projectName` (must come from an upstream `compose-build`).
+- **Outputs**: `projectName`, `containers`, `composeConfig`.
 
 ### `set-environment`
 Selects the active Docker environment (target host) for all downstream nodes in this pipeline. Does **not** set application environment variables — see the "Variables & secrets" section below for that.
@@ -100,12 +117,18 @@ Triggers a new build on another deployment stage of the same repository. Only ru
 - **Configuration**: `stageId`, `stageName`, `triggerOnFailure` (trigger even if the current pipeline failed).
 - **Outputs**: `triggered`, `triggeredStageId`, `triggeredBuildId`.
 
+### `compose-run`
+Runs a one-off command inside a service of the stack (`docker compose run`), typically to run tests or a migration before starting.
+- **Configuration**: `service` (target service), `command`, `workingDir`, `user`, `noDeps` (do not start linked services), `continueOnError` (do not fail the pipeline on a non-zero exit code).
+- **Inputs**: `workDir`, `composeFile`, `projectName`.
+- **Outputs**: `exitCode`, `service`, `projectName`, `composeFile`.
+
 ## Docker containers
 
 ### `create-container`
 Creates a Docker container from an image (without starting it — chain with `start-container` to run it). Repository environment variables are injected automatically, overridable via `envVarsSource` (reference to an upstream output) and `envVars` (values entered directly in the node).
 - **Configuration**: `containerName`, `imageName`, `restartPolicy` (`no` / `always` / `on-failure` / `unless-stopped`), `networkName`, `ports` / `portsSource`, `envVars` / `envVarsSource`, `volumes` / `volumesSource`.
-- **Outputs**: `containerId`, `containerName`.
+- **Outputs**: `containerId`, `containerName`, `imageName`.
 
 ### `start-container`
 Starts an existing container. Typically placed right after `create-container`.
@@ -129,21 +152,24 @@ Restarts a container.
 Removes a stopped container (without forcing a stop if it's still running).
 - **Configuration**: `containerId`.
 - **Inputs**: `containerId`.
+- **Outputs**: `containerId`.
 
 ### `delete-container`
 Deletes a container, with an option to force removal even while running, and to delete its associated anonymous volumes.
 - **Configuration**: `containerId`, `force`.
 - **Inputs**: `containerId`.
+- **Outputs**: none.
 
 ### `prune-containers`
 Removes every stopped container on the target environment to free disk space.
 - **Configuration**: `olderThan` (e.g. `24h`, only targets containers stopped for longer than that), `filter` (label filter, e.g. `label=project=myapp`).
-- **Outputs**: `removedContainers`, `reclaimedSpace` (bytes).
+- **Outputs**: `removedContainers`, `reclaimedSpace`.
 
 ### `run-command-in-container`
 Runs a shell command inside a running container (via `docker exec`).
 - **Configuration**: `containerId`, `command`, `workdir` (absolute path inside the container, default `/app`), `user`, `continueOnError` (don't fail the pipeline if the command returns a non-zero exit code).
 - **Inputs**: `containerId`.
+- **Outputs**: `exitCode`.
 
 ## Docker networks & volumes
 
@@ -155,6 +181,7 @@ Creates a Docker network.
 ### `delete-network`
 Deletes a Docker network.
 - **Configuration**: `networkId`, `force`.
+- **Outputs**: `deletedNetwork`.
 
 ### `create-volume`
 Creates a named Docker volume.
@@ -164,11 +191,12 @@ Creates a named Docker volume.
 ### `delete-volume`
 Deletes a Docker volume.
 - **Configuration**: `volumeName`, `force`.
+- **Outputs**: `deletedVolume`.
 
 ### `prune-volumes`
 Removes unused Docker volumes on the target environment to free disk space.
 - **Configuration**: `all` (also include named volumes, not just anonymous ones, off by default), `filter` (label filter, e.g. `label=project=myapp`).
-- **Outputs**: `removedVolumes`, `reclaimedSpace` (bytes).
+- **Outputs**: `removedVolumes`, `reclaimedSpace`.
 
 ## Docker images
 
@@ -176,17 +204,18 @@ Removes unused Docker volumes on the target environment to free disk space.
 Creates a new tag for an existing Docker image.
 - **Configuration**: `sourceImage`, `targetTag`.
 - **Inputs**: `imageId`.
-- **Outputs**: `newImageName`.
+- **Outputs**: `sourceImage`, `targetTag`, `taggedImage`.
 
 ### `scan-image`
 Scans a Docker image for vulnerabilities using Trivy.
 - **Configuration**: `image`, `trivyVersion` (default `canary`), `severity` (minimum threshold: `CRITICAL` / `HIGH` / `MEDIUM` / `LOW`), `exitOnVulnerabilities` (fail the pipeline if vulnerabilities above the threshold are found).
 - **Inputs**: `imageId`.
-- **Outputs**: `vulnerabilities`, `criticalCount`, `highCount`.
+- **Outputs**: `image`, `vulnerabilities`, `critical`, `high`.
 
 ### `prune-images`
 Cleans up unused Docker images to free disk space.
 - **Configuration**: `filter` (optional), `olderThan` (optional), `dangling` (only target dangling images, enabled by default).
+- **Outputs**: `removedImages`, `reclaimedSpace`.
 
 ### `prune-build-cache`
 Clears the Docker build cache (`docker builder prune`) to free disk space.
@@ -197,70 +226,84 @@ Clears the Docker build cache (`docker builder prune`) to free disk space.
 Deletes a specific Docker image.
 - **Configuration**: `imageId`, `force`.
 - **Inputs**: `imageId`.
+- **Outputs**: `deletedImageId`.
 
 ## Docker Swarm
 
 ### `create-service`
 Creates a Docker Swarm service. Requires Swarm mode to be enabled on the target environment.
 - **Configuration**: `serviceName`, `imageName`, `mode` (`replicated` / `global`), `replicas`, `ports` / `portsSource`, `envVars` / `envVarsSource`, `networks`, `constraints` (Swarm placement constraints).
-- **Outputs**: `serviceId`, `serviceName`.
+- **Outputs**: `serviceId`, `serviceName`, `imageName`.
 
 ### `update-service`
 Updates an existing Swarm service (rolling update).
 - **Configuration**: `serviceId`, `serviceName`, `image` (new image), `forceUpdate`.
 - **Inputs**: `serviceId`.
+- **Outputs**: `serviceName`, `image`.
 
 ### `scale-service`
 Adjusts the number of replicas of a Swarm service.
 - **Configuration**: `serviceId`, `serviceName`, `replicas`.
 - **Inputs**: `serviceId`.
+- **Outputs**: `serviceName`, `replicas`.
 
 ## Variables & secrets
 
 ### `set-env-vars`
 Defines inline environment variables (key/value entered directly in the node), passed to downstream deployment nodes (`deploy-compose`, `create-container`). They are added to the repository's environment variables and override them on matching keys.
 - **Configuration**: `vars` (list of key/value pairs).
+- **Outputs**: `envVariables`.
 
 ### `fetch-secrets-vault`
 Fetches secrets from a HashiCorp Vault instance and injects them as environment variables for downstream nodes.
 - **Configuration**: `endpoint`, `token`, `secretPath`, `kvVersion` (`v1` or `v2`), `namespace` (optional).
-- **Outputs**: `secrets`.
+- **Outputs**: `envVariables`, `secretCount`.
 
 ### `fetch-secrets-doppler`
 Fetches secrets from Doppler and injects them as environment variables for downstream nodes.
 - **Configuration**: `serviceToken`, `project` (optional), `config` (optional).
-- **Outputs**: `secrets`.
+- **Outputs**: `envVariables`, `secretCount`.
+
+### `fetch-secrets-infisical`
+Fetches secrets from Infisical and injects them as environment variables for downstream nodes.
+- **Configuration**: `siteUrl` (default `https://app.infisical.com`), `authMethod` (`universal-auth` or `access-token`), `clientId` and `clientSecret` (for Universal Auth) or `accessToken`, `projectId`, `environment` (slug, default `dev`), `secretPath` (default `/`), `recursive`, `expandSecretReferences`, `includeImports`.
+- **Outputs**: `envVariables`, `secretCount`.
 
 ## Flow control
 
 ### `condition`
 Logical AND/OR gate: blocks execution of downstream nodes depending on whether all (`and`) or at least one (`or`) upstream nodes succeeded.
 - **Configuration**: `operator` (`and` / `or`).
+- **Outputs**: `passed`, `branch`.
 
 ### `delay`
 Adds a fixed delay (in seconds) between two pipeline steps.
 - **Configuration**: `seconds` (default 5).
+- **Outputs**: `delayed`.
 
 ### `wait-for-health`
 Waits until a container's Docker healthcheck reports "healthy" before continuing.
 - **Configuration**: `containerId`, `timeout` (seconds, default 60), `interval` (check frequency, default 5s).
 - **Inputs**: `containerId`.
+- **Outputs**: `containerId`, `healthy`.
 
 ### `wait-for-port`
 Waits until a TCP port is open and accepting connections inside a container.
 - **Configuration**: `containerId`, `port` (default 80), `timeout` (default 60s), `interval` (default 3s).
 - **Inputs**: `containerId`.
+- **Outputs**: `containerId`, `port`, `open`.
 
 ### `wait-for-url`
 Polls a URL in a loop until it returns the expected HTTP status code.
 - **Configuration**: `url`, `expectedStatus` (default 200), `timeout` (default 60s), `interval` (default 5s), `method` (`GET` / `POST` / `HEAD`).
+- **Outputs**: `url`, `status`.
 
 ## HTTP & webhooks
 
 ### `http-request`
 Makes an HTTP request to an external API.
 - **Configuration**: `url`, `method` (`GET`/`POST`/`PUT`/`DELETE`/`PATCH`/`HEAD`), `headers` (key/value list), `body`, `expectedStatus` (default 200), `continueOnError` (don't fail the pipeline if the request fails or returns another code).
-- **Outputs**: `statusCode`, `body`, `headers`.
+- **Outputs**: `status`, `body`.
 
 ## Notifications & monitoring
 
@@ -273,25 +316,26 @@ Sends a webhook notification (Slack, Discord, etc.) based on the pipeline's outc
 Searches a container's logs for a pattern, and can fail the pipeline depending on the result.
 - **Configuration**: `containerId`, `pattern`, `since` (time window), `timeout` (default 30s), `failIfFound` (fail if the pattern IS found, instead of the default behavior of failing when it's absent).
 - **Inputs**: `containerId`.
-- **Outputs**: `found`, `matchedLine`.
+- **Outputs**: `found`, `matchedLine`, `containerId`.
 
 ## Cache
 
 ### `cache-save`
 Saves a folder (e.g. `node_modules`) to a cache volume to speed up subsequent builds.
 - **Configuration**: `volumeName`, `sourcePath` (relative path to save), `cacheKey` (optional, to invalidate the cache on change).
+- **Outputs**: none.
 
 ### `cache-restore`
 Restores a folder previously cached by `cache-save`, before a build.
 - **Configuration**: `volumeName`, `cachePath` (relative destination), `cacheKey` (optional).
-- **Outputs**: `cacheHit`.
+- **Outputs**: none.
 
 ## Domains & SSL
 
 ### `add-domain`
 Adds a custom domain and a Traefik routing rule for a container.
 - **Configuration**: `host`, `path` / `internalPath` (path rewriting), `stripPath`, `containerName`, `containerPort` (default 3000), `https` (requires `certificateId` in that case), Cloudflare options (`cloudflareCredentialId`, `cloudflareZoneId`, `cloudflareZoneName`) for automatic DNS management.
-- **Outputs**: `domain`.
+- **Outputs**: `host`, `containerPort`, `domainId`, `environmentId`.
 
 ### `remove-domain`
 Removes a domain and its associated Traefik routing rule for the repository.
@@ -301,27 +345,31 @@ Removes a domain and its associated Traefik routing rule for the repository.
 ### `add-ssl-certificate`
 Provisions an SSL certificate for a domain, via Let's Encrypt or an imported custom certificate.
 - **Configuration**: `certType` (`LETS_ENCRYPT` / `CUSTOM`), `name`, `domain`, `email` (for Let's Encrypt), `agreedToTos`, `certificate` / `privateKey` (if `CUSTOM`).
+- **Outputs**: `certificateId`, `domain`.
 
 ## Files, backup & quality
 
 ### `download-file`
 Downloads a file from a URL into the pipeline's working directory.
 - **Configuration**: `url`, `destinationPath` (relative destination folder, default `.`), `filename` (optional).
-- **Outputs**: `filePath`.
+- **Outputs**: `url`, `outputFile`, `filename`, `sizeBytes`.
 
 ### `backup-volume-bucket-storage`
 Backs up a Docker volume's content to an object storage bucket (S3 or compatible).
 - **Configuration**: `volumeName`, `accountId` (storage account configured in Nexploy), `bucket`.
+- **Outputs**: `fileName`, `bucket`, `volumeName`.
 
 ### `sonarqube-scan`
 Runs a SonarQube code quality analysis. Can fail the pipeline on the quality gate and/or if a metric (e.g. test coverage) is below a required minimum score.
 - **Configuration**: `mode` (`local`: ephemeral SonarQube instance launched by the pipeline, or `custom`: external instance), `projectKey`, `token`, `sources` (default `.`), `exclusions`, `qualityGate` (fail on the SonarQube quality gate), `enforceMinScore` + `scoreMetric` (`coverage` / `line_coverage` / `branch_coverage`) + `minScore` (default 80), `timeoutSeconds` (default 300), `serverUrl` (default `https://sonarcloud.io` in `custom` mode), `organization`, `sonarqubeVersion` and `sonarqubePort` (in `local` mode).
 - **Inputs**: `workDir`.
-- **Outputs**: `qualityGatePassed`, `projectKey`, `score`.
+- **Outputs**: `qualityGatePassed`, `projectKey`.
 
 ### `save-version`
+- **Outputs**: `versionNumber`.
 Records the current build as a numbered version, viewable and restorable (rollback) from the repository's **Versions** tab. **Attach-node**: connects to the bottom attachment handle of `deploy-compose` or `create-container` via `sourceHandle: 'save-version'` / `targetHandle: 'input'` — never through the standard output handle on the right of the node.
 
 ### `clean-workdir`
 Deletes the cloned working directory to free disk space. **End node**: should be the last node of every pipeline that clones a repository.
 - **Inputs**: `workDir`.
+- **Outputs**: `cleaned`.
