@@ -1,0 +1,135 @@
+---
+title: CLI di recovery
+description: Reimpostare una password admin quando l'app è down, tramite @nexploy/cli
+---
+
+`@nexploy/cli` è uno strumento a riga di comando che agisce **direttamente sul database
+Postgres** dell'istanza — non tramite l'API dell'applicazione. Funziona
+quindi anche se `nexploy_app` è down, mal configurato, o se la password admin è
+persa.
+
+<Callout type="warn" title="Da eseguire sul server, come root">
+Ha bisogno di accedere al socket Docker (`docker inspect`) e legge
+`/etc/nexploy/cli.env` (generato da `install.sh`) — inutilizzabile al di fuori della
+macchina su cui Nexploy è installato.
+</Callout>
+
+## Installazione
+
+```bash
+npm install -g @nexploy/cli
+```
+
+Prerequisiti: Node.js ≥ 18 e Docker installati sul server.
+
+```bash
+nexploy --version
+```
+
+## Come accede al database
+
+Nessuna password viene memorizzata su disco dal CLI. A ogni esecuzione,
+legge la password Postgres e l'indirizzo del container direttamente tramite
+`docker inspect nexploy_postgres` — lo stesso dato che Nexploy stesso ha
+usato per avviare quel container, mai duplicato altrove.
+
+In concreto, equivale a:
+```bash
+docker inspect nexploy_postgres --format '{{json .Config.Env}}'          # POSTGRES_PASSWORD, ecc.
+docker inspect nexploy_postgres --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'  # indirizzo IP
+```
+poi si connette direttamente a `postgresql://nexploy:<password>@<ip>:5432/nexploy`.
+
+<Callout type="warn" title="Il CLI ha bisogno di Docker">
+Se `docker inspect nexploy_postgres` fallisce (Docker assente, container arrestato,
+nessun diritto su `/var/run/docker.sock`), il CLI lo segnala esplicitamente
+invece di fallire in silenzio.
+</Callout>
+
+## Configurazione
+
+Nulla da configurare manualmente per la connessione al database — vedi sopra.
+L'unico file che il CLI legge è `/etc/nexploy/cli.env`, generato da
+`install.sh`, che contiene soltanto:
+
+| Variabile | Ruolo |
+|---|---|
+| `NEXPLOY_CLI_KEY_HASH` | Hash SHA-256 della recovery key |
+
+È un hash non reversibile (non un secret in chiaro) — è l'unico dato
+che il CLI ha bisogno di memorizzare sull'host, poiché gira al di fuori di Docker e
+deve poter verificare la recovery key anche se nessun container risponde.
+Override possibile con `NEXPLOY_DIR` se Nexploy è installato altrove rispetto a
+`/etc/nexploy`.
+
+<Callout title="Installazioni precedenti">
+Le installazioni fatte prima di questa modifica avevano un `/etc/nexploy/nexploy.env`
+contenente tutti i secret (database, Better Auth, cifratura, ecc.).
+Il prossimo `upgrade` migra automaticamente l'hash della recovery key verso
+`cli.env` e poi elimina il vecchio file — nulla da fare manualmente.
+</Callout>
+
+## Recovery key
+
+Ogni comando richiede la **recovery key** mostrata una sola volta
+all'installazione di Nexploy. Viene richiesta in modo interattivo, oppure passata
+in modo non interattivo tramite `NEXPLOY_CLI_KEY`:
+
+```bash
+NEXPLOY_CLI_KEY="<chiave>" sudo -E nexploy admin reset-password
+```
+
+Se l'hai persa, rigenerane una nuova sul server:
+
+```bash
+curl -fsSL https://nexploy.app/install.sh | sh -s rotate-cli-key
+```
+
+<Callout type="warn">
+La chiave in chiaro viene mostrata una sola volta durante la rotazione — in seguito viene memorizzato
+soltanto il suo hash (`NEXPLOY_CLI_KEY_HASH`). La vecchia chiave smette
+immediatamente di funzionare.
+</Callout>
+
+## Comandi
+
+### `nexploy admin reset-password [--email <email>]`
+
+Reimposta la password di un utente con un valore casuale
+appena generato e revoca tutte le sue sessioni attive. Senza `--email`,
+punta all'unico utente con il ruolo `admin` — passa `--email` se ci sono
+più admin, oppure per puntare a un account non admin.
+
+```bash
+sudo nexploy admin reset-password
+```
+
+<Callout type="warn">
+Funziona soltanto per gli account con un login email/password — è
+l'unico metodo di accesso a Nexploy, quindi il caso normale. Un account senza
+voce `account` di tipo `credential` fa fallire il comando in modo esplicito,
+invece di creare una password su un account che non ne usa.
+</Callout>
+
+## Log di audit
+
+Ogni azione `admin` (successo **o** fallimento — chiave non valida, utente
+non trovato, ecc.) viene aggiunta in JSON in
+`<NEXPLOY_DIR>/cli-audit.log` (per impostazione predefinita `/etc/nexploy/cli-audit.log`),
+leggibile soltanto come root (`0600`). Ogni voce contiene un timestamp, l'
+host, l'utente OS, l'azione, il risultato e la destinazione — mai la password
+generata.
+
+```json
+{"timestamp":"2026-07-21T12:52:04.075Z","host":"ubuntu-4gb-nbg1-1","user":"root","pid":15174,"action":"admin.reset-password","outcome":"success","target":"admin@example.com"}
+```
+
+## Perché un accesso diretto al database invece di una chiamata API
+
+`@nexploy/cli` è volutamente concepito come uno strumento di ultima istanza:
+aggira l'applicazione per restare utilizzabile anche se è down o
+irraggiungibile. I secret applicativi (password Postgres, chiavi di
+cifratura, ecc.) vivono soltanto nell'ambiente dei container Docker —
+mai duplicati in un file sull'host. L'unico dato che il CLI memorizza
+da sé è un hash non reversibile della recovery key, che va comunque
+custodita come un secret di livello infrastrutturale.

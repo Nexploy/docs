@@ -1,0 +1,10 @@
+{
+  "title": "Gestione Docker",
+  "pages": [
+    "containers",
+    "images",
+    "volumes-networks",
+    "swarm",
+    "events"
+  ]
+}

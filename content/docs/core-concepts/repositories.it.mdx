@@ -1,0 +1,44 @@
+---
+title: Repository
+description: Un'applicazione da distribuire a partire da un repository Git
+---
+
+Un **repository** rappresenta un'applicazione da distribuire a partire da un repository Git.
+
+Ogni repository appartiene a un'[organizzazione](/it/core-concepts/organizations), che determina i membri autorizzati ad accedervi. I nuovi repository sono collegati all'organizzazione attiva.
+
+## Creare un repository
+
+1. Scegli il provider Git e il repository sorgente.
+2. Seleziona il branch da seguire.
+3. Configura il **Dockerfile** (percorso) o un **docker-compose**.
+4. Aggiungi le tue **variabili d'ambiente** (cifrate).
+5. Definisci il **dominio** e il routing Traefik.
+
+## Stage di deployment
+
+Un repository si distribuisce attraverso degli **stage** (per esempio *staging* poi *production*). Ogni stage possiede i propri:
+
+- **pipeline** — il suo grafo di nodi;
+- **variabili d'ambiente**;
+- **ambiente Docker** — l'host su cui distribuisce;
+- **versioni** — le immagini registrate da `save-version`.
+
+Uno stage può essere contrassegnato come **production** ed essere **protetto** da un altro stage: accetta allora un deployment soltanto una volta riuscito il suo stage prerequisito. Il nodo `trigger-stage-build` concatena la pipeline di uno stage su quella successiva.
+
+## Ciclo di vita di un build
+
+Ogni deployment attraversa gli stati seguenti:
+
+```
+QUEUED → BUILDING → COMPLETED
+                  ↘ FAILED / CANCELLED
+```
+
+Un build fallito non viene ripreso dal punto in cui si è fermato — rilanciarlo riesegue la pipeline dall'inizio. Vedi [Pipeline di build](/it/core-concepts/build-pipeline).
+
+## Variabili d'ambiente
+
+- Aggiunte per stage di un repository, **cifrate a riposo**.
+- Iniettate automaticamente in `deploy-compose` e `create-container` al momento del deployment.
+- Mai esposte in chiaro nell'interfaccia dopo il salvataggio.

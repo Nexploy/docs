@@ -1,0 +1,10 @@
+{
+  "title": "Red y dominios",
+  "pages": [
+    "traefik-ssl",
+    "ssl-certificates",
+    "domains",
+    "cloudflare",
+    "requests"
+  ]
+}

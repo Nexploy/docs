@@ -28,7 +28,7 @@ Git Push → Webhook → Pipeline Inngest → Docker API → Conteneur + route T
 Événements Docker → State Manager → SSE → Store Zustand → Interface React
 ```
 
-## Structure du monorepo
+## Structure du dépôt
 
 ```
 nexploy/
@@ -43,3 +43,49 @@ nexploy/
 └── infra/
     └── traefik/       # Config routage et SSL
 ```
+
+## Les nœuds de pipeline sont une bibliothèque à part
+
+Les nœuds ne vivent pas dans le dépôt de l'application : ils forment une bibliothèque
+publiée sur npm, **@nexploy/nodes**, que Nexploy installe comme dépendance.
+
+```
+@nexploy/nodes/
+└── src/
+    ├── core/    # Contrats, schémas Zod, helpers d'exécution — sans React
+    ├── ui/      # Adaptateur UI, primitives de glisser-déposer, thème
+    └── nodes/   # Les 62 nœuds intégrés
+```
+
+La bibliothèque est publiée sur npm : Nexploy l'installe comme n'importe quelle
+dépendance (`@nexploy/nodes`), et non depuis les sources.
+
+Chaque nœud est un dossier unique et se décrit lui-même :
+
+```
+src/nodes/deploy-compose/
+├── node.ts        # descripteur — la source de vérité
+├── executor.ts    # logique serveur
+├── Config.tsx     # panneau de configuration
+└── locales/       # nom, description et libellés (en, fr)
+```
+
+Le **descripteur** est isomorphe : ni React, ni icônes, ni dépendance au canvas. Tout le
+reste en est dérivé — la définition d'interface, la couleur et l'icône selon la catégorie,
+le catalogue exposé à l'assistant IA, et les sorties qu'on peut glisser vers un nœud aval.
+Rien n'est déclaré deux fois.
+
+Un nœud ne connaît jamais l'application. Ce dont il a besoin lui est **injecté** :
+
+| Côté | Accès |
+|---|---|
+| Executor | `ctx.services.docker`, `.git`, `.build`, `.registry`, `.domain`, `.ssl`, `.version`… |
+| Panneau | Les hooks de `@nexploy/nodes/ui` — environnements, conteneurs, images, volumes, réseaux |
+
+C'est cette inversion qui rend la bibliothèque réutilisable : la même définition de nœud
+fonctionne quel que soit l'hôte qui fournit ces services.
+
+<Callout>
+Le type d'un nœud est une chaîne libre, pas une énumération fermée. Un nœud est valide
+parce qu'un descripteur est enregistré pour lui — ce qui ouvre la porte à des nœuds tiers.
+</Callout>

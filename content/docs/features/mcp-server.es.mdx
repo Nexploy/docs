@@ -1,0 +1,69 @@
+---
+title: Servidor MCP
+description: Conectar Cursor, Claude Desktop o cualquier cliente MCP a tu infraestructura
+---
+
+Más allá del [asistente de IA integrado](/es/features/ai-assistant), Nexploy expone su propio **servidor Model Context Protocol**. Cualquier cliente MCP externo — Cursor, Claude Desktop y otros — puede conectarse y actuar sobre tu infraestructura con las mismas herramientas que el asistente integrado.
+
+Todo se configura desde **Administración → IA → MCP**.
+
+## Endpoint
+
+El servidor escucha en un único endpoint, mostrado en esta página:
+
+```
+https://<tu-dominio>/api/mcp
+```
+
+Habla en HTTP streamable. La autenticación se acepta bien mediante una sesión OAuth (el cliente se redirige a `/signin`), bien mediante una clave API.
+
+## Generar una clave
+
+Haz clic en **Generar una clave API**, dale un nombre que identifique al cliente (`Cursor`, `Claude Desktop`…) y copia la clave — solo se muestra **una vez**. Las claves llevan el prefijo `nxp_mcp_` y **nunca caducan**; revócalas desde la misma página cuando un cliente ya no necesite acceso.
+
+Una clave está vinculada al usuario que la creó y hereda sus permisos, tanto de instancia como de organización. Generar una requiere el permiso `mcpKey:create`, que solo posee el rol de instancia `admin`.
+
+Envíala en la cabecera `x-api-key`:
+
+```json
+{
+  "mcpServers": {
+    "nexploy": {
+      "url": "https://<tu-dominio>/api/mcp",
+      "headers": { "x-api-key": "nxp_mcp_…" }
+    }
+  }
+}
+```
+
+## Herramientas disponibles
+
+Se exponen 68 herramientas, repartidas en 12 grupos:
+
+| Grupo | Herramientas |
+|---|---|
+| **Contenedores** (10) | `listContainers`, `inspectContainer`, `getContainerLogs`, `containerAction`, `pauseContainer`, `unpauseContainer`, `renameContainer`, `recreateContainer`, `createContainer`, `execInContainer` |
+| **Imágenes** (7) | `listImages`, `inspectImage`, `pullImage`, `tagImage`, `deleteImages`, `pruneImages`, `scanImage` |
+| **Volúmenes** (5) | `listVolumes`, `inspectVolume`, `createVolume`, `deleteVolumes`, `pruneVolumes` |
+| **Redes** (4) | `listNetworks`, `inspectNetwork`, `createNetwork`, `deleteNetworks` |
+| **Compose** (6) | `listComposeStacks`, `getComposeStatus`, `listComposeContainers`, `validateComposeSyntax`, `deployCompose`, `composeAction` |
+| **Repositorios** (9) | `listRepositories`, `getRepository`, `listBuilds`, `getBuildNodeLogs`, `triggerRepositoryBuild`, `setEnvVariables`, `cancelBuild`, `removeBuild`, `deleteRepository` |
+| **Pipelines** (4) | `listPipelineNodes`, `getPipelineNodeDetail`, `analyzeRepository`, `savePipeline` |
+| **Entornos** (6) | `listEnvironments`, `useEnvironment`, `createEnvironment`, `updateEnvironment`, `setDefaultEnvironment`, `deleteEnvironment` |
+| **Registries** (4) | `listRegistries`, `createRegistry`, `updateRegistry`, `deleteRegistry` |
+| **SSL** (4) | `listSslCertificates`, `createLetsEncryptCertificate`, `createCustomCertificate`, `deleteSslCertificate` |
+| **Swarm** (8) | `listSwarmNodes`, `listSwarmServices`, `initSwarm`, `leaveSwarm`, `swarmNodeAction`, `createSwarmService`, `scaleSwarmService`, `removeSwarmServices` |
+| **Confirmación** (1) | `requestConfirmation` — el asistente lo llama antes de cualquier acción destructiva y espera tu aprobación |
+
+## Restringir lo que puede hacer
+
+Desde **Administración → IA → Ajustes**, cada grupo se desactiva de forma independiente — imágenes, volúmenes, redes, compose, repositorios, registries, SSL, entornos, operaciones Swarm y `execInContainer` por sí solo. Un grupo desactivado simplemente no se registra en el servidor: el cliente ni siquiera ve esas herramientas.
+
+Dos interruptores a nivel de instancia importan especialmente:
+
+- **Activar el servidor MCP** — desactivado, `/api/mcp` rechaza todas las peticiones y corta de golpe todos los clientes externos.
+- **Exigir una confirmación para las acciones destructivas** — activado, se registra una herramienta `requestConfirmation` y el modelo debe llamarla, y luego detenerse, antes de cualquier eliminación, parada o prune. Confirmas tú antes de que prosiga.
+
+<Callout type="warn" title="Una clave MCP es una clave Nexploy">
+  Las claves API están respaldadas por una sesión: una clave enviada en `x-api-key` autentica también el resto de la API de Nexploy, no solo `/api/mcp`. Trátala como la contraseña de la cuenta que la creó.
+</Callout>

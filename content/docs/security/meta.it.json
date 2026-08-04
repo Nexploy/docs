@@ -1,0 +1,8 @@
+{
+  "title": "Sicurezza",
+  "pages": [
+    "authentication",
+    "api-keys",
+    "recovery-cli"
+  ]
+}

@@ -5,5 +5,7 @@ export const { GET } = createFromSource(source, {
     localeMap: {
         fr: { language: 'french' },
         en: { language: 'english' },
+        it: { language: 'italian' },
+        es: { language: 'spanish' },
     },
 });

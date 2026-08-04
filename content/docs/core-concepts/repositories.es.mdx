@@ -1,0 +1,44 @@
+---
+title: Repositorios
+description: Una aplicación a desplegar desde un repositorio Git
+---
+
+Un **repositorio** representa una aplicación a desplegar desde un repositorio Git.
+
+Cada repositorio pertenece a una [organización](/es/core-concepts/organizations), que determina los miembros autorizados a acceder a él. Los nuevos repositorios se vinculan a la organización activa.
+
+## Crear un repositorio
+
+1. Elige el proveedor Git y el repositorio de origen.
+2. Selecciona la rama a seguir.
+3. Configura el **Dockerfile** (ruta) o un **docker-compose**.
+4. Añade tus **variables de entorno** (cifradas).
+5. Define el **dominio** y el enrutamiento de Traefik.
+
+## Stages de despliegue
+
+Un repositorio se despliega a través de **stages** (por ejemplo *staging* y luego *production*). Cada stage tiene sus propios:
+
+- **pipeline** — su grafo de nodos;
+- **variables de entorno**;
+- **entorno Docker** — el host sobre el que despliega;
+- **versiones** — las imágenes registradas por `save-version`.
+
+Un stage puede marcarse como **production** y estar **protegido** por otro stage: entonces solo acepta un despliegue una vez que su stage prerrequisito ha tenido éxito. El nodo `trigger-stage-build` encadena la pipeline de un stage con la siguiente.
+
+## Ciclo de vida de un build
+
+Cada despliegue pasa por los siguientes estados:
+
+```
+QUEUED → BUILDING → COMPLETED
+                  ↘ FAILED / CANCELLED
+```
+
+Un build fallido no se reanuda donde se detuvo — relanzarlo vuelve a ejecutar la pipeline desde el principio. Ver [Pipeline de build](/es/core-concepts/build-pipeline).
+
+## Variables de entorno
+
+- Añadidas por stage de un repositorio, **cifradas en reposo**.
+- Inyectadas automáticamente en `deploy-compose` y `create-container` en el momento del despliegue.
+- Nunca expuestas en claro en la interfaz después de guardarlas.

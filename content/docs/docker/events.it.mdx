@@ -1,0 +1,33 @@
+---
+title: Eventi Docker
+description: Flusso in diretta di tutto ciò che accade sul daemon Docker
+---
+
+La pagina **Eventi** trasmette in diretta il flusso di eventi del daemon Docker — ogni container che si avvia, ogni immagine scaricata, ogni volume creato o distrutto, che provenga da Nexploy, da una pipeline o da qualcuno che digita `docker` sul server.
+
+È il flusso che Nexploy usa internamente per mantenere container, immagini, volumi e reti sincronizzati in tempo reale, esposto grezzo per i momenti in cui hai bisogno di vedere l'ordine reale degli eventi.
+
+## Cosa contiene una riga
+
+| Colonna | Significato |
+|---|---|
+| **Data e ora** | Il momento in cui il daemon ha emesso l'evento |
+| **Tipo** | `container`, `image`, `network` o `volume` |
+| **Azione** | Cosa è successo — `create`, `start`, `die`, `destroy`, `pull`, `connect`… |
+| **Nome / ID** | Il nome della risorsa, o i primi 12 caratteri del suo ID |
+
+Le azioni sono colorate in base alla loro natura: una serie di eventi distruttivi (`die`, `kill`, `destroy`, `remove`) si distingue subito da una sequenza di deployment normale.
+
+## Filtraggio
+
+Filtra per tipo di risorsa e cerca per nome o per azione. Entrambi si applicano all'intero flusso e reimpostano la paginazione. La dimensione della pagina è regolabile, fino a mostrare tutto.
+
+## Solo in diretta
+
+Il flusso parte vuoto e si riempie man mano che arrivano gli eventi — non viene riempito retroattivamente con lo storico, e ricaricare la pagina riparte da un flusso nuovo. Docker stesso non conserva un archivio di eventi interrogabile oltre una breve finestra temporale: consideralo una console in diretta più che un registro di audit.
+
+## A cosa serve
+
+- Confermare che un deployment abbia effettivamente ricreato un container, e in quale ordine.
+- Individuare un container che si riavvia in loop: un ciclo `die` → `start` ripetuto salta all'occhio.
+- Vedere le modifiche fatte al di fuori di Nexploy sullo stesso host.

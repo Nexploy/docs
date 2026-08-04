@@ -1,0 +1,48 @@
+---
+title: Versiones y rollback
+description: Conservar el historial de las imágenes desplegadas y redesplegar una versión anterior
+---
+
+Una **versión** es la instantánea de un despliegue exitoso: la imagen desplegada, el commit del que procede y el host Docker sobre el que arrancó. Es lo que convierte un rollback en una operación de un solo clic en lugar de una reconstrucción.
+
+## Crear una versión
+
+Las versiones no se crean automáticamente — las produce el nodo **`save-version`** de tu pipeline. Añádelo en la rama que despliega, y cada ejecución exitosa registrará una versión.
+
+El nodo lee lo que necesita de sus nodos aguas arriba, por lo que no tiene configuración propia:
+
+| Registrado | Fuente |
+|---|---|
+| `imageTag` | El ID del build — es también el tag de la imagen |
+| `versionNumber` | Autoincrementado por repositorio y por entorno (`v1`, `v2`, …) |
+| `branch`, `commitHash`, `commitMessage` | El nodo de clonado aguas arriba más cercano |
+| `environmentId` | El `set-environment` aguas arriba más cercano, si no el entorno por defecto |
+| `stageId` | El stage para el que se ejecutó el build |
+| `composeConfig` | El archivo compose renderizado, cuando el nodo aguas arriba es `deploy-compose` |
+
+<Callout>
+  En la plantilla Docker Compose, `save-version` está vinculado a `deploy-compose`: es lo que permite hacer rollback de un despliegue compose con exactamente el archivo usado en el despliegue.
+</Callout>
+
+## Redesplegar una versión
+
+Desde la pestaña **Versiones** del repositorio, elige una versión y redespliégala. Nexploy toma el camino más corto — sin clonado, sin build:
+
+- **Despliegue Dockerfile** — comprueba que la imagen `<repositoryId>:<imageTag>` siga existiendo en el host de destino, y luego recrea el contenedor a partir de ella.
+- **Despliegue Compose** — vuelve a ejecutar la configuración compose almacenada en la versión, tras comprobar que cada imagen que construye sigue presente.
+
+En ambos casos, las variables de entorno **actuales** del repositorio se descifran y se inyectan. Un rollback restaura la *imagen* anterior, no la *configuración* anterior: si has modificado una variable desde entonces, la imagen antigua arranca con el nuevo valor.
+
+<Callout type="warn" title="Una versión necesita su imagen">
+  Las versiones almacenan una referencia, no los bytes de la imagen. Si la imagen se ha eliminado del host — manualmente o por la [limpieza automática](/es/features/cleanup) — el redespliegue falla con un error de *imagen no encontrada*. Tenlo en cuenta antes de activar la limpieza de imágenes en un host en el que haces rollbacks.
+</Callout>
+
+## Eliminar una versión
+
+Eliminar una versión desde la interfaz retira **tanto** la entrada en base de datos como la imagen Docker subyacente (sin forzado: la eliminación falla si un contenedor sigue usándola).
+
+Las versiones están separadas por stage: cada stage de un repositorio tiene su propia lista de versiones, en su propio host Docker.
+
+## Permisos
+
+Redesplegar una versión requiere el permiso `deployment:deploy` — concedido por los roles de instancia `developer` y `admin`, y por los roles de organización `admin` y `owner`. Un `member` de organización puede lanzar builds pero no redesplegar una versión pasada.

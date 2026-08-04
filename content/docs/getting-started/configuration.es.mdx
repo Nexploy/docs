@@ -1,0 +1,31 @@
+---
+title: Configuración
+description: Variables de entorno principales y primer arranque
+---
+
+## Variables de entorno principales
+
+| Variable | Función |
+|---|---|
+| `DATABASE_URL` | Cadena de conexión de PostgreSQL |
+| `ENCRYPTION_KEY` | Secreto del que deriva (scrypt) la clave AES-256-GCM de cifrado de las variables de entorno — sin valor predeterminado, hay que generarlo con `openssl rand -hex 32` |
+| `BETTER_AUTH_SECRET` | Secreto de autenticación — sin valor predeterminado, hay que generarlo con `openssl rand -hex 32` |
+| `BETTER_AUTH_URL` | URL pública de la aplicación |
+| `DOCKER_API_URL` | URL del servicio `docker-api` |
+| `NEXPLOY_API_KEY` | Clave compartida entre los dos servicios — **nexploy** la envía a `docker-api`, que la espera y la usa para volver a llamar a nexploy. Mismo nombre de variable y mismo valor en ambos `.env`, generada por `pnpm db:seed` |
+| `INNGEST_BASE_URL` | URL del servidor Inngest autoalojado |
+| `INNGEST_EVENT_KEY` | Clave de evento de Inngest |
+| `INNGEST_SIGNING_KEY` | Clave de firma de Inngest |
+| `LOG_LEVEL` | Nivel de log (p. ej. `info`) |
+
+<Callout>La lista completa está disponible en `apps/nexploy/.env.example` y `apps/docker-api/.env.example`.</Callout>
+
+En producción, el instalador (`install.sh`) genera automáticamente todos estos secretos y los pasa directamente a cada contenedor al arrancar (`docker inspect nexploy_app` para consultarlos) — no se escribe nada en un archivo del host. En desarrollo, `BETTER_AUTH_SECRET` y `ENCRYPTION_KEY` deben generarse manualmente, mientras que `NEXPLOY_API_KEY` la produce `pnpm --filter=nexploy db:seed` — consulta [Instalación](/es/getting-started/installation) para los detalles.
+
+## Primer arranque
+
+En el primer arranque, la aplicación te redirige a `/setup`, donde creas tu cuenta de administrador. Después podrás:
+
+1. Conectar un **proveedor Git** (GitHub, GitLab, Gitea, Bitbucket o Azure Repos).
+2. Configurar uno o varios **entornos** (hosts Docker).
+3. Crear tu primer **repositorio** para desplegar.

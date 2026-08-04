@@ -1,0 +1,71 @@
+---
+title: Variables de entorno
+description: Referencia de las variables de entorno de Nexploy
+---
+
+En producción mediante el instalador (`install.sh`), todas estas variables se generan automáticamente y se pasan directamente a cada contenedor al arrancar — ninguna se escribe en un archivo del host (consultables mediante `docker inspect nexploy_app` / `docker inspect nexploy_docker_api`). En desarrollo se configuran en `apps/nexploy/.env` y `apps/docker-api/.env` (ver [Instalación](/es/getting-started/installation)).
+
+Solo `nexploy-cli` (la herramienta de recuperación, distinta de la aplicación) persiste un dato en el host, en `/etc/nexploy/cli.env`: el hash de su recovery key — ver [CLI de recuperación](/es/security/recovery-cli).
+
+## `apps/nexploy/.env`
+
+| Variable | Función |
+|---|---|
+| `NEXPLOY_URL` | URL pública de la app (Inngest realtime, llamadas de IA internas, etc.) |
+| `NEXPLOY_PORT` | Puerto de escucha del servidor Next.js personalizado (por defecto `3000`) |
+| `BETTER_AUTH_SECRET` | Secreto de firma de las sesiones — sin valor por defecto, generar con `openssl rand -hex 32` |
+| `BETTER_AUTH_URL` | URL base usada por Better Auth (callbacks/cookies) |
+| `TRUSTED_ORIGINS` | Lista de orígenes de confianza adicionales, separados por comas (opcional) |
+| `DATABASE_URL` | Cadena de conexión de PostgreSQL |
+| `ENCRYPTION_KEY` | Secreto del que deriva (scrypt) la clave AES-256-GCM de cifrado de las variables de entorno — sin valor por defecto, generar con `openssl rand -hex 32` |
+| `DOCKER_API_URL` | URL del servicio `docker-api` |
+| `NEXPLOY_API_KEY` | Clave enviada en `Authorization: Bearer` a `docker-api` para autenticarse — generada por `pnpm db:seed`, mismo valor que `NEXPLOY_API_KEY` del lado de docker-api |
+| `INNGEST_BASE_URL` | URL del servidor Inngest autoalojado (el SDK le envía los eventos / sincroniza las funciones) |
+| `INNGEST_EVENT_KEY` | Clave de evento de Inngest |
+| `INNGEST_SIGNING_KEY` | Clave de firma de Inngest (verifica las peticiones entre la app y el servidor Inngest) |
+| `DEPLOYER_WORK_DIR` | Directorio de trabajo para clonar los repositorios y construir las imágenes |
+| `TRAEFIK_SERVICE_DIR` | Directorio host del proveedor de archivos de Traefik (opcional, despliegues contenedorizados) |
+| `TRAEFIK_CERTS_CONTAINER_PATH` | Ruta de los certificados TLS en el contenedor Traefik (opcional) |
+| `TRAEFIK_STATIC_CONFIG_PATH` | Ruta donde escribir `traefik.yml` en el primer arranque si falta (opcional — solo activa el renderizado en instalaciones mediante `install.sh`) |
+| `TRAEFIK_USE_TLS` | `false` para renderizar `traefik.yml` sin HTTPS/ACME (modo IP sin dominio) — por defecto `true` |
+| `ACME_EMAIL` | Email de Let's Encrypt usado para renderizar `traefik.yml` cuando `TRAEFIK_USE_TLS` no es `false` |
+| `LOG_LEVEL` | Nivel de log (p. ej. `info`) |
+| `NODE_ENV` | Modo de ejecución — fijado a `production` por `install.sh` |
+
+## `apps/docker-api/.env`
+
+| Variable | Función |
+|---|---|
+| `PORT` | Puerto de escucha (por defecto `3300`) |
+| `NODE_ENV` | Modo de ejecución — fijado a `production` por `install.sh` |
+| `LOG_LEVEL` | Nivel de log |
+| `DOCKER_SOCKET` | Ruta del socket Docker (por defecto `/var/run/docker.sock`) |
+| `NEXPLOY_API_URL` | URL de la app nexploy, para volver a llamar a la app |
+| `NEXPLOY_API_KEY` | Secreto compartido esperado por `docker-api` — mismo valor que `NEXPLOY_API_KEY` del lado de nexploy. Si falta, `docker-api` lo recupera automáticamente al arrancar mediante `GET /api/internal/docker-api-key` (autenticado por `ENCRYPTION_KEY`) — es lo que hacen las imágenes Docker, en ese caso no lo fijes manualmente |
+| `ENCRYPTION_KEY` | Mismo valor que del lado de `apps/nexploy/.env` — usado para autenticar la recuperación automática de `NEXPLOY_API_KEY` |
+| `TRAEFIK_CONTAINER_NAME` | Nombre del contenedor Traefik a pilotar (por defecto `nexploy_traefik`) |
+| `TRAEFIK_NETWORK_NAME` | Red Docker que Traefik vigila (por defecto `nexploy_traefik_network`) |
+| `NEXPLOY_APP_CONTAINER_NAME` | Nombre del contenedor `nexploy_app` (por defecto `nexploy_app`) — usado para recrearlo al cambiar de dominio/IP desde Admin → Ajustes |
+| `TRAEFIK_STATIC_CONFIG_PATH` | Ruta de `traefik.yml`, eliminado y luego esperado de nuevo tras una recreación del contenedor `nexploy_app` (opcional) |
+
+## Contenedor `nexploy_postgres`
+
+Ninguna de las dos aplicaciones lee estas variables: configuran la propia imagen de PostgreSQL. `install.sh` las pasa al contenedor `nexploy_postgres` y compone `DATABASE_URL` a partir de ellas. En un `upgrade`, las relee del contenedor existente para no romper la base de datos.
+
+| Variable | Función |
+|---|---|
+| `POSTGRES_DB` | Nombre de la base creada en el primer arranque (`nexploy`) |
+| `POSTGRES_USER` | Rol de PostgreSQL creado en el primer arranque (`nexploy`) |
+| `POSTGRES_PASSWORD` | Contraseña de ese rol — generada aleatoriamente por `install.sh` (en desarrollo: `nexploy`) |
+
+<Callout type="warn" title="Conserva cuidadosamente tu ENCRYPTION_KEY">
+  Sirve para descifrar las variables de entorno de tus repositorios. Su pérdida hace que tus secretos sean irrecuperables.
+</Callout>
+
+<Callout type="warn" title="NEXPLOY_API_KEY debe ser idéntica en ambos lados">
+  Es el **mismo** nombre de variable y el **mismo** secreto en `apps/nexploy/.env` y `apps/docker-api/.env`. Un desajuste entre ambos hace fallar todas las llamadas entre los dos servicios con un error `401`.
+</Callout>
+
+<Callout type="warn" title="ENCRYPTION_KEY también debe ser idéntica en ambos lados">
+  `docker-api` la usa como `x-internal-secret` para volver a llamar a nexploy (verificación de las claves API y recuperación automática de la clave al arrancar). Un valor distinto rompe ambas cosas.
+</Callout>

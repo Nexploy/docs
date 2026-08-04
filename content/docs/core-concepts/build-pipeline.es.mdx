@@ -1,0 +1,39 @@
+---
+title: Pipeline de build
+description: Grafo de nodos ejecutado por Inngest en cada despliegue
+---
+
+Un despliegue no ejecuta una lista de pasos fija: ejecuta el **grafo de nodos** configurado para el stage desplegado, orquestado por Inngest. Cada nodo es un paso de Inngest, lo que hace la ejecución duradera y permite transmitir los logs en directo.
+
+## Qué se ejecuta
+
+Cada stage de un repositorio tiene su propia pipeline, editada en el [editor de nodos](/es/pipelines/visual-editor). Al iniciar un build, el grafo actual se **congela en una instantánea** adjunta al build: modificar la pipeline después nunca reescribe el historial de los builds pasados.
+
+El orquestador recorre el grafo, ejecuta cada nodo en cuanto todos sus nodos aguas arriba han terminado y transmite sus salidas aguas abajo. Una rama cuya condición no se cumple se marca como *skipped*, así como todo lo que la sigue.
+
+## Partir de una plantilla
+
+En el editor hay dos plantillas listas para usar, para no partir de un lienzo en blanco:
+
+| Plantilla | Nodos |
+|---|---|
+| **Dockerfile** | `clone-repository` → `build-docker-image` → `create-container` |
+| **Docker Compose** | `clone-repository` → `validate-compose` → `deploy-compose` → `clean-workdir`, con `save-version` en derivación |
+
+Solo son puntos de partida — cada nodo puede añadirse, eliminarse o recablearse. La lista completa está en el [catálogo de nodos](/es/pipelines/node-types).
+
+## Estados de build
+
+```
+QUEUED → BUILDING → COMPLETED
+                  ↘ FAILED / CANCELLED
+```
+
+Además, cada nodo lleva su propio estado y su duración, mostrados en directo sobre el grafo durante el build.
+
+## Características
+
+- Logs difundidos en tiempo real mediante SSE, nodo a nodo.
+- Cancelación posible durante la ejecución.
+- Un build fallido **no** se reanuda paso a paso: la pipeline se detiene y relanzarla vuelve a ejecutar el grafo desde el principio.
+- Las variables de entorno del repositorio se inyectan automáticamente en `deploy-compose` y `create-container`.

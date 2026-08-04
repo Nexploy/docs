@@ -1,0 +1,23 @@
+---
+title: Requisitos previos
+description: Lo que necesitas antes de instalar Nexploy
+---
+
+## Para una instalación en producción
+
+- Un servidor (VPS o máquina) con Linux y **Docker** (el instalador puede instalarlo por ti si no está presente)
+- Los puertos **80** y **443** libres y accesibles
+- Un **nombre de dominio** que apunte a la dirección IP de tu servidor, más una **dirección de email** válida para el registro del certificado de Let's Encrypt (Let's Encrypt usa un challenge HTTP) — **opcional**: sin dominio, el instalador detecta automáticamente la IP pública del servidor y sirve Nexploy en HTTP sin cifrar
+
+## Para el desarrollo local
+
+| Herramienta | Versión | Por qué |
+|---|---|---|
+| **Node.js** | **22.13+** | pnpm 11 lo necesita (carga `node:sqlite`) |
+| **pnpm** | 11.9+ | `corepack enable` obtiene la versión fijada en `package.json` |
+| **Docker** | con Compose v2 | Ejecuta PostgreSQL, Inngest y Traefik — y también es el destino de los despliegues |
+
+```bash
+corepack enable
+node -v   # debe ser >= 22.13
+```

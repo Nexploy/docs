@@ -1,0 +1,40 @@
+---
+title: Claves API
+description: Acceso programático a la API de Nexploy
+---
+
+Nexploy admite **claves API** para llamar a su API sin sesión interactiva.
+
+## Dónde crearlas
+
+Las claves se generan desde **Administración → IA → MCP**, la misma página que sirve para conectar un cliente MCP externo — ver [Servidor MCP](/es/features/mcp-server). No hay otra pantalla de creación: una clave generada ahí sirve tanto para MCP como para el resto de la API.
+
+Generar una clave requiere el permiso `mcpKey:create`, que solo posee el rol de instancia `admin`. Un `developer` puede ver las claves existentes pero no crearlas ni revocarlas.
+
+## Uso
+
+Envía la clave en la cabecera `x-api-key`:
+
+```bash
+curl -H "x-api-key: nxp_mcp_…" https://<tu-dominio>/api/repositories
+```
+
+Las claves están **respaldadas por una sesión**: la petición se trata exactamente como si el usuario que creó la clave estuviera conectado. Hereda por tanto su rol de instancia **y** sus pertenencias a las organizaciones — una clave creada por un usuario solo ve los repositorios de sus organizaciones.
+
+## Ciclo de vida
+
+- El secreto se muestra **una sola vez**, en la creación. Solo se almacena en forma de hash.
+- Las claves generadas llevan el prefijo `nxp_mcp_` y **no caducan**.
+- Revócalas desde la misma página; la revocación surte efecto de inmediato.
+- Eliminar al usuario propietario invalida sus claves.
+
+<Callout type="warn" title="Una clave vale lo que la cuenta que la creó">
+  No hay ninguna restricción de alcance por clave: da acceso a todo lo que
+  su propietario puede hacer, incluidas las acciones destructivas. Créalas
+  desde una cuenta cuyos permisos correspondan al uso previsto, y
+  revócalas en cuanto una herramienta ya no las necesite.
+</Callout>
+
+## No confundir
+
+`NEXPLOY_API_KEY`, la clave compartida entre `nexploy` y `docker-api`, es una clave API interna del mismo mecanismo, pero la genera el seed y se gestiona automáticamente en producción — no la revoques desde esta página. Ver [Variables de entorno](/es/reference/environment-variables).
