@@ -1,0 +1,31 @@
+---
+title: Autenticación
+description: Métodos de acceso, gestión de usuarios y seguridad de los datos
+---
+
+## Métodos de acceso
+
+- **Email / contraseña** — único método de acceso a la aplicación.
+- **Autenticación de dos factores (2FA)** — TOTP con códigos de respaldo.
+- **Claves API** — para el acceso programático, ver [Claves API](/es/security/api-keys).
+
+<Callout type="warn" title="Sin acceso OAuth y sin registro abierto">
+  El OAuth de los proveedores Git (GitHub, GitLab, Gitea, Bitbucket, Azure Repos)
+  sirve únicamente para conectar tus repositorios, no para acceder a Nexploy.
+  El registro libre está desactivado: la primera
+  cuenta de administrador se crea mediante `/setup`, y las siguientes desde
+  **Administración → Usuarios**.
+</Callout>
+
+## Gestión de usuarios
+
+Un plugin de administración permite gestionar los usuarios, sus roles y sus permisos. Los permisos son granulares por recurso (lectura/escritura por tipo de objeto).
+
+Este rol de instancia (`guest`, `developer`, `admin`) autoriza un **tipo** de acción. El acceso a un recurso concreto depende además de la pertenencia a la organización que lo posee — ver [Organizaciones](/es/core-concepts/organizations).
+
+## Seguridad de los datos
+
+- **Variables de entorno cifradas** en reposo (AES-256-GCM — cifrado autenticado: cualquier alteración del cifrado se detecta al descifrar).
+- **Tokens OAuth** almacenados de forma segura con refresco automático.
+- **Secretos de webhook** que validan los callbacks de los proveedores Git.
+- **Protección CSRF** y autenticación por sesión.

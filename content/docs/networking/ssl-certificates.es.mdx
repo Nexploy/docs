@@ -1,0 +1,59 @@
+---
+title: Certificados SSL
+description: Gestionar los certificados Let's Encrypt y los certificados personalizados desde la administración
+---
+
+Un dominio servido en HTTPS necesita un certificado. Nexploy mantiene un inventario de ellos, alimentado desde **Administración → Certificados SSL**, y cada [dominio](/es/networking/domains) en HTTPS apunta a una entrada de ese inventario.
+
+Coexisten dos tipos:
+
+| Tipo | Origen del certificado | Renovación |
+|---|---|---|
+| **Let's Encrypt** | Obtenido por Traefik mediante ACME en el primer acceso al dominio | Automática, por Traefik |
+| **Personalizado** | El PEM y la clave privada que pegas | A tu cargo |
+
+## Añadir un certificado Let's Encrypt
+
+Indica un **nombre** (etiqueta de inventario), el **dominio**, un **email** y la aceptación de las condiciones de uso de Let's Encrypt.
+
+Crear la entrada no emite ningún certificado: solo declara que ese dominio debe pasar por el resolver ACME. El certificado lo obtiene realmente Traefik la primera vez que el dominio se enruta, lo que supone que el DNS ya apunta a la instancia y que el puerto 80 es alcanzable desde el exterior — el resolver usa el challenge HTTP en el entrypoint `web`.
+
+<Callout type="warn">
+El email de la cuenta ACME usada por Traefik es el de la variable `ACME_EMAIL` de la instancia, renderizada en `traefik.yml` al arrancar — ver [Variables de entorno](/es/reference/environment-variables). El email introducido aquí se conserva en la ficha del certificado como contacto, pero no cambia la cuenta ACME.
+</Callout>
+
+## Añadir un certificado personalizado
+
+Indica un **nombre**, el **dominio**, y luego pega el **certificado** y la **clave privada** en formato PEM.
+
+Nexploy valida el par antes de guardar nada: un PEM ilegible, una clave ilegible o una clave que no corresponde al certificado se rechazan con un error explícito. La fecha de caducidad se lee en el certificado y se muestra en la tabla.
+
+Una vez validados, los dos archivos se escriben en el directorio `certs/` del proveedor de archivos de Traefik y se regenera un archivo `nexploy-certs.yml` que declara el conjunto de certificados personalizados. Traefik lo recarga en caliente, sin reinicio. Si la escritura falla, la entrada creada en base de datos se elimina — sin certificados fantasma en el inventario.
+
+## Leer la tabla
+
+- **Tipo** — insignia `Let's Encrypt` o `Custom`.
+- **Caducidad** — para un certificado personalizado, la fecha leída en el PEM: en naranja a menos de 30 días, en rojo una vez superada. Para un certificado Let's Encrypt, la columna muestra la renovación automática, ya que es Traefik quien posee y renueva el certificado.
+
+Eliminar una entrada retira también los archivos `.pem` / `.key` y regenera `nexploy-certs.yml` si se trataba de un certificado personalizado.
+
+<Callout type="warn">
+La eliminación no se bloquea si un dominio sigue usando el certificado. El router de Traefik correspondiente recae entonces en el certificado por defecto de Traefik, y el navegador muestra una advertencia. Comprueba los dominios afectados antes de eliminar.
+</Callout>
+
+## Usar un certificado en un dominio
+
+En el formulario de dominio, activa **HTTPS**: aparece un selector de certificado que lista el inventario. La elección determina la configuración TLS del router de Traefik — resolver `letsencrypt` para una entrada Let's Encrypt, TLS con los certificados del archivo para una entrada personalizada.
+
+Un certificado también puede crearse durante un build con el nodo [`add-ssl-certificate`](/es/pipelines/node-types), que acepta ambos tipos y transmite el `certificateId` producido al nodo `add-domain` aguas abajo.
+
+## Quién puede tocarlo
+
+| Rol | Lectura | Creación / eliminación |
+|---|---|---|
+| Instancia — `admin`, `developer` | sí | sí |
+| Instancia — `guest` | no | no |
+| Organización — `owner`, `admin` | sí | sí |
+| Organización — `member` | sí | no |
+
+Las mismas operaciones se exponen al asistente de IA mediante el grupo de herramientas MCP `ssl` — ver [Servidor MCP](/es/features/mcp-server).

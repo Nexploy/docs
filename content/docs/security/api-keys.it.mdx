@@ -1,0 +1,40 @@
+---
+title: Chiavi API
+description: Accesso programmatico all'API Nexploy
+---
+
+Nexploy supporta le **chiavi API** per chiamare la propria API senza sessione interattiva.
+
+## Dove crearle
+
+Le chiavi si generano da **Amministrazione → IA → MCP**, la stessa pagina che serve a collegare un client MCP esterno — vedi [Server MCP](/it/features/mcp-server). Non esiste un'altra schermata di creazione: una chiave generata lì serve tanto per MCP quanto per il resto dell'API.
+
+Generare una chiave richiede il permesso `mcpKey:create`, detenuto dal solo ruolo di istanza `admin`. Un `developer` può vedere le chiavi esistenti ma non crearne né revocarne.
+
+## Utilizzo
+
+Invia la chiave nell'header `x-api-key`:
+
+```bash
+curl -H "x-api-key: nxp_mcp_…" https://<il-tuo-dominio>/api/repositories
+```
+
+Le chiavi sono **appoggiate a una sessione**: la richiesta viene trattata esattamente come se l'utente che ha creato la chiave fosse connesso. Eredita quindi il suo ruolo di istanza **e** le sue appartenenze alle organizzazioni — una chiave creata da un utente vede soltanto i repository delle sue organizzazioni.
+
+## Ciclo di vita
+
+- Il secret viene mostrato **una sola volta**, alla creazione. Viene memorizzato solo sotto forma di hash.
+- Le chiavi generate portano il prefisso `nxp_mcp_` e **non scadono**.
+- Revocale dalla stessa pagina; la revoca ha effetto immediato.
+- Eliminare l'utente proprietario invalida le sue chiavi.
+
+<Callout type="warn" title="Una chiave vale quanto l'account che l'ha creata">
+  Non c'è alcuna restrizione di ambito per chiave: dà accesso a tutto ciò che
+  il suo proprietario può fare, comprese le azioni distruttive. Creale
+  da un account i cui permessi corrispondano all'uso previsto, e
+  revocale non appena uno strumento non ne ha più bisogno.
+</Callout>
+
+## Da non confondere
+
+`NEXPLOY_API_KEY`, la chiave condivisa tra `nexploy` e `docker-api`, è una chiave API interna dello stesso meccanismo, ma è generata dal seed e gestita automaticamente in produzione — non revocarla da questa pagina. Vedi [Variabili d'ambiente](/it/reference/environment-variables).

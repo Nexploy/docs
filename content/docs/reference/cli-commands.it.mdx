@@ -1,0 +1,32 @@
+---
+title: Comandi utili
+description: Comandi di sviluppo comuni
+---
+
+```bash
+# Sviluppo
+pnpm dev                                # nexploy + docker-api
+pnpm dev:nexploy                        # Solo Next.js (porta 3000)
+pnpm dev:docker-api                     # Solo Docker API (porta 3300)
+
+# Build e verifiche
+pnpm build                              # Tutte le app (Turborepo)
+pnpm types                              # Type check di tutti i workspace
+pnpm format                             # Formattazione Prettier
+
+# Database (limitato all'app nexploy)
+pnpm --filter=nexploy db:migrate:dev    # Creare e applicare una migrazione
+pnpm --filter=nexploy db:migrate:prod   # Applicare le migrazioni (produzione)
+pnpm --filter=nexploy db:migrate:only   # Creare una migrazione senza applicarla
+pnpm --filter=nexploy db:generate       # Rigenerare il client Prisma
+pnpm --filter=nexploy db:seed           # Seed + mostra la chiave API interna
+pnpm --filter=nexploy db:studio         # Prisma Studio (GUI)
+pnpm --filter=nexploy db:reset          # Drop, re-migrate, re-seed
+
+# Test end-to-end
+pnpm test:e2e                           # Playwright
+```
+
+<Callout type="warn">
+`pnpm lint` è attualmente rotto: `next lint` è stato rimosso in Next 16 e gli script di lint non sono ancora stati migrati. Nel frattempo usa `pnpm types`.
+</Callout>

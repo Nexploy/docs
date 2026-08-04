@@ -1,0 +1,10 @@
+{
+  "title": "Conceptos clave",
+  "pages": [
+    "repositories",
+    "build-pipeline",
+    "versions",
+    "environments",
+    "organizations"
+  ]
+}

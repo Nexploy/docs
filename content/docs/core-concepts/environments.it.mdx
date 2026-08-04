@@ -1,0 +1,34 @@
+---
+title: Ambienti (host Docker)
+description: Pilotare più host Docker
+---
+
+Un **ambiente** rappresenta un host Docker su cui distribuire. Nexploy può pilotare più host.
+
+## Tipi di connessione
+
+| Tipo | Descrizione |
+|---|---|
+| **Locale (socket Unix)** | Socket Docker locale della macchina host (`/var/run/docker.sock`) |
+| **TCP** | Connessione a un daemon Docker remoto tramite TCP (host + porta) |
+| **TCP con TLS** | Connessione TCP remota autenticata da certificato client (cert, chiave e CA TLS) |
+
+Puoi così separare i tuoi ambienti (ad es. *staging* e *production*) e puntare all'host desiderato nelle tue pipeline tramite il nodo `set-environment`.
+
+## Chi può gestirli
+
+Gli ambienti fanno parte dell'**infrastruttura dell'istanza**, non delle risorse di un'organizzazione: li governa soltanto il ruolo di istanza.
+
+| Azione | Ruolo richiesto |
+|---|---|
+| Elencare gli ambienti, cambiare l'ambiente attivo | `guest`, `developer`, `admin` |
+| Creare, modificare, eliminare, impostare come predefinito | `admin` |
+
+Un `developer` distribuisce sugli host esistenti e passa liberamente dall'uno all'altro, ma non può modificare il modo in cui Nexploy si connette a un daemon Docker. La restrizione copre tutti i punti d'ingresso: il selettore della barra laterale, le server action e gli strumenti [MCP](/it/features/mcp-server) `createEnvironment` / `updateEnvironment` / `setDefaultEnvironment` / `deleteEnvironment`.
+
+<Callout type="warn" title="Perché riservato agli admin">
+  Un ambiente contiene l'indirizzo di un daemon Docker e il suo certificato client
+  TLS. Modificarne uno reindirizza tutti i deployment successivi verso un altro host;
+  eliminarne uno stacca gli stage e le versioni che lo puntavano. Sono
+  decisioni di infrastruttura, non di deployment.
+</Callout>

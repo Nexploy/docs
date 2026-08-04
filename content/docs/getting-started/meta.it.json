@@ -1,0 +1,9 @@
+{
+  "title": "Per iniziare",
+  "defaultOpen": true,
+  "pages": [
+    "prerequisites",
+    "installation",
+    "configuration"
+  ]
+}

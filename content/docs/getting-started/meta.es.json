@@ -1,0 +1,9 @@
+{
+  "title": "Primeros pasos",
+  "defaultOpen": true,
+  "pages": [
+    "prerequisites",
+    "installation",
+    "configuration"
+  ]
+}

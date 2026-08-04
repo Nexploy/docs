@@ -1,0 +1,31 @@
+---
+title: Configurazione
+description: Variabili d'ambiente principali e primo avvio
+---
+
+## Variabili d'ambiente principali
+
+| Variabile | Ruolo |
+|---|---|
+| `DATABASE_URL` | Stringa di connessione PostgreSQL |
+| `ENCRYPTION_KEY` | Segreto da cui deriva (scrypt) la chiave AES-256-GCM di cifratura delle variabili d'ambiente — senza valore predefinito, da generare con `openssl rand -hex 32` |
+| `BETTER_AUTH_SECRET` | Segreto di autenticazione — senza valore predefinito, da generare con `openssl rand -hex 32` |
+| `BETTER_AUTH_URL` | URL pubblico dell'applicazione |
+| `DOCKER_API_URL` | URL del servizio `docker-api` |
+| `NEXPLOY_API_KEY` | Chiave condivisa tra i due servizi — **nexploy** la invia a `docker-api`, che la attende e la usa per richiamare nexploy. Stesso nome di variabile e stesso valore nei due `.env`, generata da `pnpm db:seed` |
+| `INNGEST_BASE_URL` | URL del server Inngest self-hosted |
+| `INNGEST_EVENT_KEY` | Chiave evento di Inngest |
+| `INNGEST_SIGNING_KEY` | Chiave di firma di Inngest |
+| `LOG_LEVEL` | Livello di log (es. `info`) |
+
+<Callout>L'elenco completo è disponibile in `apps/nexploy/.env.example` e `apps/docker-api/.env.example`.</Callout>
+
+In produzione, l'installer (`install.sh`) genera automaticamente tutti questi segreti e li passa direttamente a ciascun container all'avvio (`docker inspect nexploy_app` per consultarli) — nulla viene scritto in un file sull'host. In sviluppo, `BETTER_AUTH_SECRET` e `ENCRYPTION_KEY` devono essere generati manualmente, mentre `NEXPLOY_API_KEY` è prodotta da `pnpm --filter=nexploy db:seed` — vedi [Installazione](/it/getting-started/installation) per i dettagli.
+
+## Primo avvio
+
+Al primo avvio, l'applicazione ti reindirizza a `/setup`, dove crei il tuo account amministratore. Potrai poi:
+
+1. Collegare un **provider Git** (GitHub, GitLab, Gitea, Bitbucket o Azure Repos).
+2. Configurare uno o più **ambienti** (host Docker).
+3. Creare il tuo primo **repository** da distribuire.

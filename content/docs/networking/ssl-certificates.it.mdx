@@ -1,0 +1,59 @@
+---
+title: Certificati SSL
+description: Gestire i certificati Let's Encrypt e i certificati personalizzati dall'amministrazione
+---
+
+Un dominio servito in HTTPS ha bisogno di un certificato. Nexploy ne tiene un inventario, alimentato da **Amministrazione → Certificati SSL**, e ogni [dominio](/it/networking/domains) in HTTPS punta a una voce di questo inventario.
+
+Coesistono due tipi:
+
+| Tipo | Origine del certificato | Rinnovo |
+|---|---|---|
+| **Let's Encrypt** | Ottenuto da Traefik tramite ACME al primo accesso al dominio | Automatico, da parte di Traefik |
+| **Personalizzato** | Il PEM e la chiave privata che incolli | A tuo carico |
+
+## Aggiungere un certificato Let's Encrypt
+
+Indica un **nome** (etichetta d'inventario), il **dominio**, un'**email** e l'accettazione delle condizioni d'uso di Let's Encrypt.
+
+Creare la voce non emette alcun certificato: dichiara semplicemente che questo dominio deve passare dal resolver ACME. Il certificato viene realmente ottenuto da Traefik la prima volta che il dominio viene instradato, il che presuppone che il DNS punti già all'istanza e che la porta 80 sia raggiungibile dall'esterno — il resolver usa la challenge HTTP sull'entrypoint `web`.
+
+<Callout type="warn">
+L'email dell'account ACME usato da Traefik è quella della variabile `ACME_EMAIL` dell'istanza, renderizzata in `traefik.yml` all'avvio — vedi [Variabili d'ambiente](/it/reference/environment-variables). L'email inserita qui è conservata sulla scheda del certificato come contatto, ma non cambia l'account ACME.
+</Callout>
+
+## Aggiungere un certificato personalizzato
+
+Indica un **nome**, il **dominio**, poi incolla il **certificato** e la **chiave privata** in formato PEM.
+
+Nexploy convalida la coppia prima di salvare qualsiasi cosa: un PEM illeggibile, una chiave illeggibile o una chiave che non corrisponde al certificato vengono rifiutati con un errore esplicito. La data di scadenza viene letta nel certificato e mostrata nella tabella.
+
+Una volta convalidati, i due file vengono scritti nella directory `certs/` del provider file di Traefik e un file `nexploy-certs.yml` che dichiara l'insieme dei certificati personalizzati viene rigenerato. Traefik lo ricarica a caldo, senza riavvio. Se la scrittura fallisce, la voce creata nel database viene eliminata — nessun certificato fantasma nell'inventario.
+
+## Leggere la tabella
+
+- **Tipo** — badge `Let's Encrypt` o `Custom`.
+- **Scadenza** — per un certificato personalizzato, la data letta nel PEM: in arancione a meno di 30 giorni, in rosso una volta superata. Per un certificato Let's Encrypt, la colonna mostra il rinnovo automatico, poiché è Traefik a detenere e rinnovare il certificato.
+
+Eliminare una voce rimuove anche i file `.pem` / `.key` e rigenera `nexploy-certs.yml` se si trattava di un certificato personalizzato.
+
+<Callout type="warn">
+L'eliminazione non viene bloccata se un dominio usa ancora il certificato. Il router Traefik corrispondente ricade allora sul certificato predefinito di Traefik e il browser mostra un avviso. Verifica i domini interessati prima di eliminare.
+</Callout>
+
+## Usare un certificato su un dominio
+
+Nel modulo del dominio, attiva **HTTPS**: compare un selettore di certificato che elenca l'inventario. La scelta determina la configurazione TLS del router Traefik — resolver `letsencrypt` per una voce Let's Encrypt, TLS con i certificati del file per una voce personalizzata.
+
+Un certificato può anche essere creato nel corso di un build con il nodo [`add-ssl-certificate`](/it/pipelines/node-types), che accetta entrambi i tipi e trasmette il `certificateId` prodotto al nodo `add-domain` a valle.
+
+## Chi può intervenire
+
+| Ruolo | Lettura | Creazione / eliminazione |
+|---|---|---|
+| Istanza — `admin`, `developer` | sì | sì |
+| Istanza — `guest` | no | no |
+| Organizzazione — `owner`, `admin` | sì | sì |
+| Organizzazione — `member` | sì | no |
+
+Le stesse operazioni sono esposte all'assistente IA tramite il gruppo di strumenti MCP `ssl` — vedi [Server MCP](/it/features/mcp-server).

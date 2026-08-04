@@ -1,0 +1,48 @@
+---
+title: Introducción
+description: Nexploy — plataforma de despliegue autoalojada para Docker
+---
+
+**Nexploy** es una plataforma de despliegue **autoalojada** para Docker. Despliega automáticamente tus aplicaciones desde tus repositorios Git (GitHub / GitLab / Gitea / Bitbucket / Azure Repos) en contenedores Docker, con HTTPS automático gracias a Traefik.
+
+<Callout title="El concepto">
+  Vercel o Netlify, pero autoalojado y basado en Docker — mantienes el control
+  total de tu infraestructura y de tus datos.
+</Callout>
+
+## ¿Por qué Nexploy?
+
+- **Despliegue continuo** — un `git push` lanza automáticamente la build y el despliegue.
+- **HTTPS automático** — certificados SSL de Let's Encrypt gestionados por Traefik.
+- **Control total** — lo alojas todo tú, ningún dato sale de tu servidor.
+- **Gestión completa de Docker** — contenedores, imágenes, volúmenes, redes y Swarm desde una sola interfaz.
+- **Pipelines personalizables** — construye tus propios flujos de despliegue con un editor visual de nodos.
+- **Asistente de IA integrado** — pilota tu infraestructura en lenguaje natural.
+- **Tiempo real** — logs, estadísticas y eventos de Docker emitidos en directo.
+
+## Funcionalidades clave
+
+| Funcionalidad | Descripción |
+|---|---|
+| Integración Git | Despliegue desde GitHub, GitLab, Gitea, Bitbucket y Azure Repos |
+| Pipeline de build | Grafo de nodos duradero, logs en directo nodo a nodo |
+| Editor visual de pipelines | Sistema de nodos para crear flujos a medida |
+| Fases de despliegue | Staging, producción… cada una con su pipeline, sus variables y su host |
+| Organizaciones | Agrupación de repositorios por equipo, con roles dedicados |
+| Gestión de Docker | Contenedores, imágenes, volúmenes, redes, Docker Swarm |
+| Proxy inverso Traefik | Enrutamiento automático + SSL de Let's Encrypt |
+| Monitorización en tiempo real | Estadísticas de contenedores, logs, eventos mediante SSE |
+| Variables cifradas | Cifrado AES-256-GCM en reposo |
+| Terminal en el navegador | Acceso shell a los contenedores mediante WebSocket |
+| Autenticación 2FA | TOTP + códigos de respaldo |
+| Asistente de IA | Chat multiproveedor conectado a tus recursos (MCP) |
+| Entornos multihost | Socket local, TCP o TCP con TLS |
+| Copias de seguridad | Copias programadas hacia un bucket S3 |
+| Limpieza automática | Prune programado de imágenes, volúmenes, contenedores y caché de build |
+| Registries privados | Push y pull de imágenes desde tus propios registries |
+| DNS de Cloudflare | Gestión de los registros DNS |
+| Multiidioma | Inglés, francés, italiano y español |
+
+## Internacionalización
+
+La interfaz está disponible en **inglés** (`en`), **francés** (`fr`), **italiano** (`it`) y **español** (`es`). El idioma se selecciona en las preferencias de tu cuenta.

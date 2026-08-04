@@ -1,0 +1,37 @@
+---
+title: Limpieza automática
+description: Prune programado de imágenes, volúmenes, contenedores y caché de build
+---
+
+Desplegar de forma continua llena un disco: cada build deja imágenes tras de sí, cada contenedor recreado deja uno detenido y la caché de BuildKit no deja de crecer. Nexploy puede ejecutar un **prune programado** para recuperar ese espacio por sí solo.
+
+Se configura desde **Administración → Ajustes**, junto a la tarjeta de uso de disco que muestra lo que cuesta cada categoría.
+
+## Qué se limpia
+
+Elige las categorías a incluir — cada una corresponde a un prune de Docker:
+
+| Objetivo | Por defecto | Qué se elimina |
+|---|---|---|
+| **Contenedores** | activado | Todos los contenedores detenidos |
+| **Imágenes** | activado | Todas las imágenes **no utilizadas**, no solo las dangling |
+| **Caché de build** | activado | La caché de build de BuildKit |
+| **Volúmenes** | desactivado | Todos los volúmenes no vinculados a un contenedor |
+
+<Callout type="warn" title="Las imágenes y los volúmenes son los dos objetivos de riesgo">
+  La limpieza de imágenes elimina toda imagen que ningún contenedor esté ejecutando — incluidas aquellas a las que apuntan tus [versiones](/es/core-concepts/versions) anteriores, lo que hace fallar esos rollbacks. La limpieza de volúmenes elimina los volúmenes no vinculados, es decir, el lugar donde vive la base de datos de un stack detenido. Son dos decisiones que hay que tomar, no ajustes que aceptar con los ojos cerrados; por eso los volúmenes están desactivados por defecto.
+</Callout>
+
+Estos mismos cuatro prunes también existen como nodos de pipeline — `prune-containers`, `prune-images`, `prune-volumes` y `prune-build-cache` — cuando prefieres liberar espacio en un momento concreto de un build en lugar de una vez al día. Ver el [catálogo de nodos](/es/pipelines/node-types).
+
+## Programación
+
+La limpieza se ejecuta **una vez al día**, a la hora que elijas (UTC). La gestiona una función de Inngest que duerme hasta la hora prevista, ejecuta los prunes seleccionados en orden y luego se reprograma — ningún cron que instalar, y una ejecución perdida no se acumula.
+
+Los ajustes se releen justo antes de ejecutar el prune: desactivar la limpieza cancela la ejecución ya pendiente y surte efecto de inmediato.
+
+La programación es **por entorno Docker** — cada host tiene sus propios ajustes y su propio ciclo, lo que permite limpiar de forma agresiva un host de build y dejar tranquila la producción.
+
+## Informe
+
+Tras cada ejecución, Nexploy registra su fecha y el espacio en disco recuperado, ambos mostrados en la tarjeta de ajustes. Una ejecución sin ninguna categoría seleccionada no hace nada y no recupera nada.

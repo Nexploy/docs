@@ -1,0 +1,12 @@
+{
+  "title": "Funzionalità",
+  "pages": [
+    "git-integration",
+    "monitoring",
+    "registries",
+    "backups",
+    "cleanup",
+    "ai-assistant",
+    "mcp-server"
+  ]
+}

@@ -1,0 +1,91 @@
+---
+title: Arquitectura
+description: Visión técnica para colaboradores y usuarios avanzados
+---
+
+Para los colaboradores y los usuarios avanzados.
+
+## Stack
+
+| Capa | Tecnologías |
+|---|---|
+| Frontend | Next.js 16, React 19, Tailwind CSS, shadcn/ui, Zustand |
+| Backend | Next.js Server Actions, Hono.js, Prisma 7, PostgreSQL |
+| Auth | Better Auth (email, OAuth, 2FA, claves API) |
+| Jobs | Inngest (pipeline reanudable) |
+| IA | AI SDK multiproveedor + MCP |
+| Infra | Docker, Traefik, SSE, WebSocket |
+
+## Flujo de despliegue
+
+```
+Git Push → Webhook → Pipeline Inngest → Docker API → Contenedor + ruta Traefik
+```
+
+## Flujo en tiempo real
+
+```
+Eventos Docker → State Manager → SSE → Store Zustand → Interfaz React
+```
+
+## Estructura del repositorio
+
+```
+nexploy/
+├── apps/
+│   ├── nexploy/       # App Next.js — UI, orquestación
+│   └── docker-api/    # API Hono.js — operaciones Docker
+├── packages/
+│   ├── ui/            # Componentes shadcn/ui compartidos
+│   ├── schemas-zod/   # Esquemas de validación Zod
+│   ├── i18n/          # Traducciones (en, fr)
+│   └── ...
+└── infra/
+    └── traefik/       # Configuración de enrutamiento y SSL
+```
+
+## Los nodos de pipeline son una biblioteca aparte
+
+Los nodos no viven en el repositorio de la aplicación: forman una biblioteca
+publicada en npm, **@nexploy/nodes**, que Nexploy instala como dependencia.
+
+```
+@nexploy/nodes/
+└── src/
+    ├── core/    # Contratos, esquemas Zod, helpers de ejecución — sin React
+    ├── ui/      # Adaptador de UI, primitivas de arrastrar y soltar, tema
+    └── nodes/   # Los 62 nodos integrados
+```
+
+La biblioteca se publica en npm: Nexploy la instala como cualquier otra
+dependencia (`@nexploy/nodes`), y no desde las fuentes.
+
+Cada nodo es una única carpeta y se describe a sí mismo:
+
+```
+src/nodes/deploy-compose/
+├── node.ts        # descriptor — la fuente de verdad
+├── executor.ts    # lógica de servidor
+├── Config.tsx     # panel de configuración
+└── locales/       # nombre, descripción y etiquetas (en, fr)
+```
+
+El **descriptor** es isomorfo: ni React, ni iconos, ni dependencia del canvas. Todo lo
+demás se deriva de él — la definición de interfaz, el color y el icono según la categoría,
+el catálogo expuesto al asistente de IA y las salidas que se pueden arrastrar hacia un nodo aguas abajo.
+Nada se declara dos veces.
+
+Un nodo nunca conoce la aplicación. Lo que necesita se le **inyecta**:
+
+| Lado | Acceso |
+|---|---|
+| Executor | `ctx.services.docker`, `.git`, `.build`, `.registry`, `.domain`, `.ssl`, `.version`… |
+| Panel | Los hooks de `@nexploy/nodes/ui` — entornos, contenedores, imágenes, volúmenes, redes |
+
+Es esta inversión la que hace la biblioteca reutilizable: la misma definición de nodo
+funciona sea cual sea el host que proporciona esos servicios.
+
+<Callout>
+El tipo de un nodo es una cadena libre, no una enumeración cerrada. Un nodo es válido
+porque hay un descriptor registrado para él — lo que abre la puerta a nodos de terceros.
+</Callout>

@@ -1,0 +1,50 @@
+---
+title: Integración Git
+description: Conectar GitHub, GitLab, Gitea, Bitbucket y Azure Repos, y lanzar los builds desde los webhooks
+---
+
+Nexploy se conecta a tus cuentas Git para clonar tus repositorios y escuchar los eventos de push. Los proveedores se configuran una vez por instancia desde **Administración → Integraciones**, y luego cada usuario conecta ahí su propia cuenta.
+
+## Proveedores admitidos
+
+| Proveedor | Tipo de integración | Lo que aportas |
+|---|---|---|
+| **GitHub** | GitHub App | Nada — Nexploy genera la App a partir de un manifiesto con un clic (cuenta personal u organización) |
+| **GitLab** | Aplicación OAuth | `Client ID`, `Client secret` y una URL personalizada para una instancia autoalojada |
+| **Gitea** | Aplicación OAuth | `Client ID`, `Client secret` y la URL de tu instancia |
+| **Bitbucket** | Consumidor OAuth | `Clave` y `Secret` del consumidor — solo Bitbucket Cloud |
+| **Azure Repos** | Registro de aplicación de Entra ID | `ID de aplicación`, `Valor del secreto de cliente` y el `ID de inquilino` para una aplicación de un solo inquilino |
+
+### GitHub
+
+La integración con GitHub es una **GitHub App**, no una aplicación OAuth clásica. Nexploy construye él mismo el manifiesto de la App y te envía a GitHub para confirmar su creación; las credenciales vuelven automáticamente. La App solicita:
+
+| Permiso | Nivel | Por qué |
+|---|---|---|
+| `contents` | lectura | Clonar el repositorio |
+| `metadata` | lectura | Listar los repositorios y las ramas |
+| `repository_hooks` | escritura | Crear el webhook de push |
+| `statuses` | escritura | Reportar el estado del build en los commits (`update-commit-status`) |
+| `administration` | escritura | Administración del repositorio |
+
+Evento suscrito: `push`.
+
+### GitLab y Gitea
+
+Ambos usan una aplicación OAuth estándar que creas por tu lado y declaras en Nexploy. GitLab se solicita con los scopes `api read_api read_repository`, Gitea con `read:user write:repository write:organization`. Para un GitLab autoalojado, marca la opción de URL personalizada; para Gitea, la URL de la instancia siempre es obligatoria.
+
+### Bitbucket
+
+Crea un **consumidor OAuth** desde Ajustes del espacio de trabajo → Consumidores OAuth, con la URL de retorno `{tu-dominio}/api/git/oauth/callback`. Los permisos se marcan en el propio consumidor: Cuenta (Lectura), Repositorios (Lectura, Escritura, Administración), Webhooks (Lectura y escritura), Pull requests (Lectura). Solo se admite **Bitbucket Cloud** — no hay ninguna URL de instancia que indicar.
+
+### Azure Repos
+
+Crea un **registro de aplicación** en Microsoft Entra ID, con el URI de redirección (tipo Web) `{tu-dominio}/api/git/oauth/callback`. En Permisos de API, añade Azure DevOps → `user_impersonation` y concede el consentimiento de administrador; el token se solicita con `offline_access` para poder renovarse. El ID de inquilino solo es necesario para una aplicación de un solo inquilino — deja el campo vacío para una aplicación multiinquilino.
+
+## Webhooks
+
+Al conectar un repositorio, Nexploy configura automáticamente un webhook en él. En cada push sobre la rama seguida, se lanza un build mediante el nodo `webhook-clone`. Cada webhook está protegido por un secreto y cada llamada entrante se autentica antes de cualquier ejecución: firma HMAC para GitHub, Gitea y Bitbucket, token de webhook para GitLab, cabecera secreta para Azure Repos.
+
+## Más allá del clonado
+
+Una vez conectado, el proveedor también sirve a los nodos de pipeline que escriben hacia él. Los cinco proveedores exponen `update-commit-status` y `create-release` mediante su API. Los nodos `git-tag`, `merge-branch` y `cherry-pick-commit` pasan por git mismo con las credenciales almacenadas: funcionan por tanto con cualquier proveedor.

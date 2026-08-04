@@ -1,0 +1,184 @@
+---
+title: Instalación
+description: Instalar Nexploy en producción o en desarrollo
+---
+
+## Instalación en producción (recomendada)
+
+En una máquina con Docker, basta con un solo comando:
+
+```bash
+curl -fsSL https://nexploy.app/install.sh | sh
+```
+
+<Callout>
+No se clona ni se compila nada — el instalador descarga las imágenes publicadas (`nexploy/nexploy` y `nexploy/docker-api`), así que una instalación tarda alrededor de un minuto.
+</Callout>
+
+El script instala Docker si hace falta, pide tu **dominio** y un **email de Let's Encrypt** (o te permite saltarte ambos y funcionar sobre la IP desnuda del servidor en HTTP simple — ver más abajo), genera todos los secretos y los pasa directamente a los contenedores (nada se escribe en claro en el disco del host), escribe la configuración de Traefik y luego arranca cinco contenedores:
+
+| Contenedor | Función |
+|---|---|
+| `nexploy_traefik` | Proxy inverso, TLS, puertos 80/443 |
+| `nexploy_app` | La aplicación (ejecuta las migraciones y el seed en el primer arranque) |
+| `nexploy_docker_api` | Operaciones Docker |
+| `nexploy_postgres` | Base de datos |
+| `nexploy_inngest` | Jobs de la pipeline de build |
+
+Requisitos: lanzar el script como **root** (gestiona Docker y escribe en `/etc/nexploy`), y los puertos **80** y **443** libres y accesibles. Si usas un dominio, el DNS debe apuntar a la máquina antes del final de la instalación — Let's Encrypt usa un challenge HTTP para emitir el certificado.
+
+### Instalar sin dominio (solo IP)
+
+¿Aún no tienes dominio? Deja vacío el prompt del dominio (o define `NEXPLOY_NO_DOMAIN=true` para una instalación no interactiva) y el instalador detecta la IP pública de tu servidor y sirve Nexploy en HTTP simple — sin Let's Encrypt, sin email requerido:
+
+```bash
+NEXPLOY_NO_DOMAIN=true sh -c "$(curl -fsSL https://nexploy.app/install.sh)"
+```
+
+<Callout type="warn">
+HTTP simple significa ningún certificado — práctico para empezar, desaconsejado a largo plazo. Puedes pasar a un dominio real con HTTPS en cualquier momento, ya sea desde **Admin → Ajustes** en la app (que recrea el contenedor de la app y reinicia Traefik con los nuevos ajustes, sin reinstalación), o manualmente — ver [Proxy inverso y SSL](/es/networking/traefik-ssl). Acuérdate también de actualizar manualmente la URL de redirección OAuth en tu proveedor git — ver [Proxy inverso y SSL](/es/networking/traefik-ssl).
+</Callout>
+
+### Instalación no interactiva
+
+```bash
+NEXPLOY_DOMAIN=nexploy.example.com NEXPLOY_EMAIL=you@example.com \
+  sh -c "$(curl -fsSL https://nexploy.app/install.sh)"
+```
+
+| Variable | Por defecto | Función |
+|---|---|---|
+| `NEXPLOY_DOMAIN` | *(se pide)* | Dominio en el que se sirve la app |
+| `NEXPLOY_EMAIL` | *(se pide si hay un dominio definido)* | Dirección de contacto de Let's Encrypt |
+| `NEXPLOY_NO_DOMAIN` | `false` | A `true` para saltarse el dominio y servir en la IP del servidor (HTTP simple) |
+| `NEXPLOY_VERSION` | *(última release)* | Tag de imagen a desplegar, p. ej. `v1.0.0` |
+| `NEXPLOY_DIR` | `/etc/nexploy` | Ubicación de los secretos y de la configuración de Traefik |
+| `NEXPLOY_REPO` | `Nexploy/nexploy` | Repo de GitHub usado para resolver la última release |
+
+### Actualización
+
+```bash
+curl -fsSL https://nexploy.app/install.sh | sh -s upgrade
+```
+
+La actualización descarga la versión solicitada y recrea los contenedores. Tus secretos, tu base de datos y tu dominio quedan intactos — relanzar el instalador nunca los regenera.
+
+Si ya estás en la última versión, el comando no hace nada. Para forzar la recreación de los contenedores incluso sin cambio de versión (útil tras un problema en un contenedor, por ejemplo), añade `--force`:
+
+```bash
+curl -fsSL https://nexploy.app/install.sh | sh -s upgrade --force
+```
+
+### Desinstalar
+
+```bash
+curl -fsSL https://nexploy.app/install.sh | sh -s uninstall
+```
+
+<Callout type="warn" title="Destructivo">
+Esto elimina tu base de datos, los metadatos de tus despliegues y todos los secretos generados — sin posibilidad de vuelta atrás. Se pedirá una confirmación escribiendo `remove`.
+</Callout>
+
+### Gestionar la instancia
+
+```bash
+docker logs -f nexploy_app          # logs de la aplicación
+docker restart nexploy_app          # reiniciar la app
+docker ps --filter name=nexploy_    # todos los contenedores Nexploy
+```
+
+<Callout type="warn" title="No elimines los contenedores a la ligera">
+  Tus secretos (entre ellos `ENCRYPTION_KEY`, que sirve para descifrar tus variables de entorno) no están almacenados en ningún sitio del disco del host — viven únicamente en el entorno de los contenedores (consultable mediante `docker inspect nexploy_app`). Eliminar los contenedores sin haber guardado esos valores los hace irrecuperables. Solo `/etc/nexploy/cli.env` persiste en disco, y únicamente contiene el hash de la recovery key de `nexploy-cli` — ver [CLI de recuperación](/es/security/recovery-cli).
+</Callout>
+
+## Instalación en desarrollo
+
+### 1. Requisitos e instalación de las dependencias
+
+```bash
+corepack enable
+node -v   # debe ser >= 22.13
+
+git clone https://github.com/Nexploy/nexploy.git
+cd nexploy
+pnpm install
+```
+
+### 2. Crear los archivos de entorno
+
+```bash
+cp apps/nexploy/.env.example    apps/nexploy/.env
+cp apps/docker-api/.env.example apps/docker-api/.env
+```
+
+Dos secretos no tienen valor por defecto — genéralos y pégalos en `apps/nexploy/.env`:
+
+```bash
+openssl rand -hex 32   # -> BETTER_AUTH_SECRET
+openssl rand -hex 32   # -> ENCRYPTION_KEY
+```
+
+`ENCRYPTION_KEY` va también en `apps/docker-api/.env`, con el **mismo valor** — docker-api la usa como secreto interno para volver a llamar a nexploy y verificar las claves API.
+
+Todos los demás valores ya apuntan al stack de desarrollo (PostgreSQL en `5433`, Inngest en `8288`). Deja `NEXPLOY_API_KEY` vacía en ambos archivos por ahora — el paso 5 la genera.
+
+### 3. Arrancar la infraestructura
+
+```bash
+docker compose -f infra/docker/docker-compose.dev.yml up -d
+```
+
+| Contenedor | Puerto | Notas |
+|---|---|---|
+| PostgreSQL | `5433` | usuario / contraseña / base: `nexploy` |
+| Inngest dev server | `8288` | UI para inspeccionar los jobs de build |
+| Traefik | `80`, `443`, `8080` | `8080` es el dashboard |
+
+### 4. Aplicar las migraciones de la base de datos
+
+```bash
+pnpm --filter=nexploy db:migrate:dev
+```
+
+### 5. Seed y clave API interna
+
+Nexploy y `docker-api` se autentican mutuamente mediante una **clave API de Better Auth** compartida. El seed la crea — con el entorno Docker local por defecto — y la muestra:
+
+```bash
+pnpm --filter=nexploy db:seed
+```
+
+```
+NEXPLOY_API_KEY=nxp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+Copia este valor en **los dos** archivos de entorno:
+
+```bash
+# apps/nexploy/.env      — la clave que nexploy envía a docker-api
+NEXPLOY_API_KEY=nxp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# apps/docker-api/.env   — la clave que docker-api espera, y usa para volver a llamar a nexploy
+NEXPLOY_API_KEY=nxp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+Ambos lados la leen desde el **mismo nombre de variable**, `NEXPLOY_API_KEY`.
+
+<Callout type="warn">
+Relanzar el seed **revoca y recrea** la clave. Si `docker-api` responde de repente `401`, vuelve a copiarla.
+</Callout>
+
+### 6. Arrancar las aplicaciones
+
+```bash
+pnpm dev
+```
+
+| Servicio | URL |
+|---|---|
+| Aplicación web | http://localhost:3000 |
+| Docker API | http://localhost:3300 |
+| Inngest Dev UI | http://localhost:8288 |
+| Traefik Dashboard | http://localhost:8080 |
+
+Abre http://localhost:3000 — se te redirige a `/setup`, donde creas la primera cuenta de administrador.

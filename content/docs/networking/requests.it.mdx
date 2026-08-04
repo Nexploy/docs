@@ -1,0 +1,42 @@
+---
+title: Richieste HTTP
+description: Flusso in diretta del traffico che passa da Traefik
+---
+
+La pagina **Richieste** mostra in diretta ogni richiesta HTTP trattata da Traefik — sia il traffico delle tue applicazioni distribuite sia quello di Nexploy stesso. È il modo più rapido per rispondere a «il mio dominio è davvero instradato?» senza aprire una shell sul server.
+
+## Funzionamento
+
+Traefik è configurato per scrivere il proprio access log in **JSON**. Nexploy legge in continuo il flusso di log di questo container, analizza ogni riga e spinge il risultato verso l'interfaccia tramite SSE. Nulla viene interrogato in polling e nulla viene memorizzato su disco da Nexploy.
+
+Ogni richiesta mostra:
+
+| Campo | Significato |
+|---|---|
+| `timestamp` | Il momento in cui Traefik l'ha trattata |
+| `method`, `path`, `protocol` | La richiesta stessa |
+| `status` | Il codice di risposta |
+| `duration` | Il tempo di elaborazione |
+| `size` | La dimensione della risposta |
+| `requestHost` | L'header `Host` — quale dei tuoi domini è stato chiamato |
+| `routerName`, `serviceName` | Quale router Traefik ha fatto match e quale servizio ha risposto |
+| `clientHost`, `clientAddr` | La provenienza |
+| `userAgent` | Il client |
+
+## Buffer in memoria
+
+Il flusso conserva in memoria soltanto le **ultime 500 richieste**, le più recenti per prime. È una vista in diretta, non un archivio: riavviare `docker-api` la svuota, e non c'è né conservazione né ricerca sul traffico passato. Per access log di lungo termine, leggi direttamente il file di log di Traefik.
+
+## Se non appare nulla
+
+- **Nessun container Traefik** — Nexploy verifica che il container esista prima di agganciarvisi. Se non è ancora in esecuzione, la pagina attende e si riaggancia da sé non appena Traefik si avvia.
+- **Nessun traffico** — il buffer si riempie solo man mano che arrivano le richieste. Chiama uno dei tuoi domini e comparirà immediatamente.
+- **Richieste che aggirano Traefik** — tutto ciò che raggiunge un container direttamente su una porta pubblicata non passa dal proxy e quindi non compare mai qui.
+
+## Leggere un problema di routing
+
+Una richiesta che arriva su Traefik ma non sulla tua applicazione si vede in genere qui prima che altrove:
+
+- **404 senza `routerName`** — nessun router ha fatto match, il dominio non è collegato a un container. Vedi [Domini](/it/networking/domains).
+- **502 / 503 con un `serviceName`** — il router ha fatto match ma il container non risponde sulla porta configurata.
+- **Proprio nulla** — il DNS non punta a questa macchina, oppure la richiesta non ha mai raggiunto la porta 80/443.

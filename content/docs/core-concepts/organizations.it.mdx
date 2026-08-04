@@ -1,0 +1,132 @@
+---
+title: Organizzazioni
+description: Raggruppare i tuoi repository e collaborare in più persone su una stessa istanza
+---
+
+Un'**organizzazione** raggruppa dei repository e i membri autorizzati ad accedervi. Ogni repository appartiene a un'organizzazione: è quest'ultima a determinare chi può vederlo e agire su di esso.
+
+<Callout title="Perché è importante">
+  Senza organizzazione, qualsiasi utente con il ruolo adeguato poteva agire
+  sull'**insieme** delle risorse dell'istanza. L'appartenenza a un'organizzazione
+  viene ormai verificata per ogni azione su un repository, un build, un container
+  o un dominio.
+</Callout>
+
+## Due livelli di permessi
+
+Nexploy combina due sistemi di ruoli che non vanno confusi:
+
+| Livello | Ruoli | Ambito |
+| --- | --- | --- |
+| **Istanza** | `guest`, `developer`, `admin` | Amministrazione globale: utenti, Traefik, registry, certificati SSL, backup, impostazioni |
+| **Organizzazione** | `owner`, `admin`, `member` | Risorse di un'organizzazione precisa: repository, build, pipeline, variabili d'ambiente, domini, container |
+
+Per agire su una risorsa servono **entrambi**: il ruolo di istanza autorizza il tipo di azione, il ruolo di organizzazione autorizza l'accesso a quella risorsa specifica.
+
+Un utente con il ruolo di istanza `admin` accede a tutte le organizzazioni, per poter intervenire come supporto.
+
+## Ruoli di organizzazione
+
+- **`member`** — consulta i repository, avvia build, gestisce i container dell'organizzazione. Non può né creare né eliminare repository, né modificare le variabili d'ambiente.
+- **`admin`** — gestisce repository, pipeline, variabili d'ambiente, domini e deployment. Invita e rimuove membri e può rinominare l'organizzazione.
+- **`owner`** — tutto ciò che può fare un `admin`, più la modifica dei ruoli dei membri e l'eliminazione dell'organizzazione.
+
+<Callout type="warn" title="Il ruolo owner non si trasmette">
+  Gli unici ruoli assegnabili sono `member` e `admin`, sia all'invito sia al
+  cambio di ruolo. L'`owner` è l'account che ha creato l'organizzazione e tale
+  resta: nell'applicazione non esiste alcun trasferimento di proprietà.
+</Callout>
+
+## Invitare un membro
+
+Gli inviti avvengono **nell'applicazione**, senza email.
+
+1. Nel selettore di organizzazione della barra laterale, apri il menu **⋯** dell'organizzazione, poi **Membri**.
+2. Clicca su **Invita un membro** e inserisci l'indirizzo email.
+3. Scegli il ruolo (`member` o `admin`).
+
+La persona invitata vede l'invito sulla sua pagina **Account** e lo accetta o lo rifiuta con un clic.
+
+<Callout type="warn" title="L'account deve già esistere">
+  Poiché la registrazione libera è disattivata su Nexploy, puoi invitare soltanto
+  un indirizzo corrispondente a un account esistente. Crea prima l'utente da
+  **Amministrazione → Utenti**.
+</Callout>
+
+Gli inviti scadono dopo 7 giorni. Un'organizzazione accetta fino a 100 membri.
+
+## Cambiare organizzazione
+
+Il selettore situato nella barra laterale, accanto al logo, passa da un'organizzazione all'altra. È anche da questo menu che si gestisce tutto: il sottomenu **⋯** di ogni organizzazione dà accesso ai membri, alla rinomina e all'eliminazione, e la voce in fondo all'elenco crea un'organizzazione.
+
+L'organizzazione attiva determina due cose:
+
+- l'elenco dei **repository mostrati** — vedi soltanto quelli dell'organizzazione attiva;
+- l'organizzazione a cui vengono **collegati i nuovi repository**.
+
+## Creare un'organizzazione
+
+Dal selettore della barra laterale, **Crea un'organizzazione**. È richiesto il ruolo di istanza `developer` o `admin`; un `guest` non può crearne.
+
+Il creatore ne diventa automaticamente `owner`.
+
+## Lasciare un'organizzazione
+
+Non serve un amministratore per uscire da un'organizzazione a cui sei stato invitato. Nel selettore della barra laterale, apri il menu **⋯** dell'organizzazione e scegli **Lascia l'organizzazione**.
+
+Uscire revoca il tuo accesso immediatamente: i suoi repository, build e container spariscono dalla tua vista. Nulla viene eliminato — l'organizzazione e le sue risorse restano intatte per i membri rimanenti. Rientrarvi richiede un nuovo invito.
+
+Se l'organizzazione lasciata era quella attiva, Nexploy passa automaticamente a un'altra delle tue organizzazioni.
+
+<Callout type="warn" title="Un proprietario unico non può uscire">
+  L'opzione è nascosta per un'organizzazione di cui sei l'unico `owner`:
+  resterebbe senza proprietario, e la proprietà non si trasmette.
+  Elimina piuttosto l'organizzazione (dopo aver spostato i suoi repository). La tua
+  organizzazione personale, invece, non può essere né lasciata né eliminata: è
+  il tuo punto d'appoggio permanente.
+</Callout>
+
+## Spostare un repository verso un'altra organizzazione
+
+Un repository non è fissato nella sua organizzazione d'origine: dalla scheda **Impostazioni** del repository, la sezione di spostamento lo trasferisce verso un'altra organizzazione.
+
+Il trasferimento richiede diritti **da entrambe le parti**: il permesso di modificare il repository nella sua organizzazione attuale e quello di creare repository nell'organizzazione di destinazione — in altre parole essere `admin` o `owner` su entrambe (un `admin` di istanza passa oltre).
+
+<Callout type="warn" title="L'account Git non segue i membri">
+  Il repository conserva l'account Git con cui è stato collegato, quello
+  dell'utente che l'ha creato. Dopo un trasferimento, i membri dell'organizzazione
+  di destinazione accedono al repository ma i clone continuano a usare quelle
+  credenziali; se quell'account viene disconnesso, il repository deve essere collegato a un
+  altro account Git.
+</Callout>
+
+## Protezioni
+
+- L'**ultimo `owner`** di un'organizzazione non può essere rimosso, né retrocesso, né lasciarla — vedi [Lasciare un'organizzazione](#lasciare-unorganizzazione).
+- Un'organizzazione che **possiede ancora dei repository** non può essere eliminata. Spostali verso un'altra organizzazione o eliminali prima.
+- L'**organizzazione personale** non può essere né rinominata, né aperta a invitati, né lasciata, né eliminata — vedi sotto.
+
+## Organizzazione personale
+
+Ogni utente riceve automaticamente un'organizzazione personale alla creazione del proprio account, nominata come lui e di cui è `owner`. È anche ciò che è avvenuto all'aggiornamento da una versione precedente: ogni utente esistente ha ricevuto la propria, con i suoi repository collegati, senza azioni manuali né perdite.
+
+È volutamente **mono-occupante e immutabile**: è il tuo spazio di lavoro, non una squadra che amministri. Quattro operazioni vi sono quindi bloccate, lato server e non solo nell'interfaccia:
+
+| Bloccato | Perché |
+|---|---|
+| **Rinomina** | La sua identità è legata all'account a cui appartiene |
+| **Invito di un membro** | Resta soltanto tua; collabora tramite un'organizzazione classica |
+| **Pagina Membri** | Avrebbe una sola riga, la tua, e nessuna azione possibile |
+| **Lasciarla** | Ne sei l'unico `owner`, e la proprietà non si trasmette |
+| **Eliminazione** | È il punto d'appoggio dei tuoi repository e della tua sessione |
+
+Un `admin` di istanza non ne è esente: la restrizione vale per l'organizzazione personale di chiunque, anche da un account amministratore.
+
+Poiché nessuna di queste azioni si applica, il menu **⋯** non compare affatto accanto all'organizzazione personale nel selettore: si seleziona soltanto, nulla di più. L'URL della sua pagina Membri restituisce un 404. Per lavorare in più persone, crea un'organizzazione classica e spostavi i repository.
+
+<Callout type="warn" title="Eliminare un utente elimina la sua organizzazione personale">
+  E l'eliminazione di un'organizzazione comporta a cascata quella dei suoi repository.
+  Questo percorso non passa dalla protezione qui sopra: prima di eliminare un
+  account da **Amministrazione → Utenti**, sposta i repository ancora
+  presenti nella sua organizzazione personale.
+</Callout>

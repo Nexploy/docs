@@ -1,0 +1,25 @@
+---
+title: Reverse proxy e SSL (Traefik)
+description: Routing automatico e HTTPS tramite Traefik
+---
+
+Nexploy utilizza **Traefik** come reverse proxy.
+
+- **Routing automatico** — ogni repository riceve la propria configurazione di router/middleware.
+- **HTTPS automatico** — certificati Let's Encrypt generati e rinnovati automaticamente.
+- **Certificati personalizzati** — puoi anche fornire i tuoi certificati SSL, vedi [Certificati SSL](/it/networking/ssl-certificates).
+- **Dashboard Traefik** disponibile per ispezionare le route.
+
+## Configurazione all'avvio
+
+La configurazione di Traefik (file di regole dinamiche e configurazione statica) non è distribuita staticamente: `nexploy` la genera da sé al proprio avvio se non esiste ancora — mai se esiste già, per non sovrascrivere una personalizzazione fatta a mano. È questo meccanismo che alimenta sia un'installazione tramite `install.sh` sia un deployment `docker-compose`.
+
+## IP o dominio per l'istanza stessa
+
+Se hai installato Nexploy senza dominio (modalità IP, vedi [Installazione](/it/getting-started/installation)), l'istanza gira in HTTP semplice, senza certificato. Puoi passare a un vero dominio con HTTPS in qualsiasi momento da **Admin → Impostazioni**: inserisci il dominio e l'email Let's Encrypt, poi salva. Nexploy ricrea il proprio container con le nuove impostazioni e riavvia Traefik automaticamente — conta qualche secondo di interruzione, senza reinstallazione né manipolazione manuale di file.
+
+Questo passaggio è disponibile soltanto per le istanze installate tramite `install.sh` — non per un deployment `docker-compose`, dove il dominio è fissato una volta per tutte nel file compose.
+
+<Callout type="warn">
+Questo cambio di indirizzo (IP → dominio, o viceversa) modifica l'URL di base dell'istanza. Se hai configurato un'applicazione OAuth presso il tuo provider git (GitHub, GitLab, ecc.), il suo **URL di reindirizzamento (callback URL)** resta puntato sul vecchio indirizzo e deve essere aggiornato **manualmente** nelle impostazioni dell'applicazione OAuth presso il provider — non viene sincronizzato automaticamente da Nexploy.
+</Callout>

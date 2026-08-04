@@ -1,0 +1,48 @@
+---
+title: Introduzione
+description: Nexploy — piattaforma di deployment self-hosted per Docker
+---
+
+**Nexploy** è una piattaforma di deployment **self-hosted** per Docker. Distribuisce automaticamente le tue applicazioni dai tuoi repository Git (GitHub / GitLab / Gitea / Bitbucket / Azure Repos) verso container Docker, con HTTPS automatico grazie a Traefik.
+
+<Callout title="Il concetto">
+  Vercel o Netlify, ma self-hosted e basato su Docker — mantieni il controllo
+  totale della tua infrastruttura e dei tuoi dati.
+</Callout>
+
+## Perché Nexploy?
+
+- **Deployment continuo** — un `git push` avvia automaticamente la build e il deployment.
+- **HTTPS automatico** — certificati SSL Let's Encrypt gestiti da Traefik.
+- **Controllo totale** — ospiti tutto tu, nessun dato lascia il tuo server.
+- **Gestione Docker completa** — container, immagini, volumi, reti e Swarm da un'unica interfaccia.
+- **Pipeline personalizzabili** — costruisci i tuoi workflow di deployment con un editor visuale di nodi.
+- **Assistente IA integrato** — pilota la tua infrastruttura in linguaggio naturale.
+- **Tempo reale** — log, statistiche ed eventi Docker trasmessi in diretta.
+
+## Funzionalità chiave
+
+| Funzionalità | Descrizione |
+|---|---|
+| Integrazione Git | Deployment da GitHub, GitLab, Gitea, Bitbucket e Azure Repos |
+| Pipeline di build | Grafo di nodi durevole, log in diretta nodo per nodo |
+| Editor visuale di pipeline | Sistema di nodi per creare workflow su misura |
+| Fasi di deployment | Staging, produzione… ognuna con la propria pipeline, le proprie variabili e il proprio host |
+| Organizzazioni | Raggruppamento dei repository per team, con ruoli dedicati |
+| Gestione Docker | Container, immagini, volumi, reti, Docker Swarm |
+| Reverse proxy Traefik | Routing automatico + SSL Let's Encrypt |
+| Monitoraggio in tempo reale | Statistiche dei container, log, eventi tramite SSE |
+| Variabili cifrate | Cifratura AES-256-GCM a riposo |
+| Terminale nel browser | Accesso shell ai container tramite WebSocket |
+| Autenticazione 2FA | TOTP + codici di backup |
+| Assistente IA | Chat multi-provider collegata alle tue risorse (MCP) |
+| Ambienti multi-host | Socket locale, TCP o TCP con TLS |
+| Backup | Backup pianificati verso un bucket S3 |
+| Pulizia automatica | Prune pianificato di immagini, volumi, container e cache di build |
+| Registry privati | Push e pull di immagini dai tuoi registry |
+| DNS Cloudflare | Gestione dei record DNS |
+| Multilingua | Inglese, francese, italiano e spagnolo |
+
+## Internazionalizzazione
+
+L'interfaccia è disponibile in **inglese** (`en`), **francese** (`fr`), **italiano** (`it`) e **spagnolo** (`es`). La lingua si seleziona nelle preferenze del tuo account.

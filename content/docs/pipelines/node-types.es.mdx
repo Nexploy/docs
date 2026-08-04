@@ -1,0 +1,375 @@
+---
+title: Catálogo de nodos
+description: Todos los tipos de nodo disponibles en el editor de pipeline, con su configuración y su uso detallado
+---
+
+Esta página recoge la totalidad de los nodos disponibles en el editor de pipeline visual. Para cada nodo: su función, sus opciones de configuración, lo que espera de los nodos aguas arriba (`Entradas`) y lo que transmite a los nodos aguas abajo (`Salidas`).
+
+<Callout>
+Las variables de entorno definidas en la pestaña **Env** de un repositorio se inyectan **automáticamente** en `deploy-compose` y `create-container` — para eso no hace falta ningún nodo dedicado. Usa `set-env-vars`, `fetch-secrets-vault` o `fetch-secrets-doppler` únicamente para añadir o sobrescribir variables adicionales antes del despliegue.
+</Callout>
+
+## Origen (recuperación del código)
+
+### `clone-repository`
+Clona el repositorio Git vinculado al repositorio. **Nodo de inicio**: siempre es el primer nodo de una pipeline clásica.
+- **Configuración**: `branch` (rama a clonar, por defecto `main`), `commitHash` (commit concreto, opcional), `submodules` (clonar los submódulos).
+- **Salidas**: `workDir`, `branch`, `commitHash`, `commitMessage`.
+
+### `webhook-clone`
+Variante de `clone-repository` lanzada por un evento push recibido mediante el webhook del proveedor Git del repositorio. **Nodo de inicio.**
+- **Configuración**: `branchFilter` (solo se dispara si la rama pusheada coincide), `submodules`.
+- **Salidas**: `workDir`, `branch`, `commitHash`, `commitMessage`, `event`, `tagName`, `targetBranch`, `mergeRequestAction`.
+
+### `git-clone-extra`
+Clona un segundo repositorio Git, distinto del repositorio principal vinculado. Útil para recuperar archivos de configuración compartidos, un monorepo satélite, etc.
+- **Configuración**: `repoUrl` (URL HTTP(S)), `branch`, `targetDir` (subcarpeta relativa donde clonar), `token` (opcional, para un repositorio privado).
+- **Salidas**: `repoUrl`, `branch`, `targetDir`.
+
+## Git (operaciones sobre el repositorio)
+
+### `git-tag`
+Crea un tag Git sobre el commit actual.
+- **Configuración**: `tagName`, `message` (opcional), `remote` (por defecto `origin`).
+- **Salidas**: `tagName`, `remote`.
+
+### `merge-branch`
+Fusiona una rama de origen en una rama de destino.
+- **Configuración**: `sourceBranch`, `targetBranch`, `strategy` (`merge` o `squash`), `message`, `remote`, `push` (empujar el resultado hacia el remoto).
+- **Salidas**: `workDir`, `targetBranch`, `sourceBranch`.
+
+### `cherry-pick-commit`
+Aplica un commit específico sobre la rama actual.
+- **Configuración**: `commitHash`, `targetBranch`, `noCommit` (solo aplica el diff sin hacer commit), `remote`.
+- **Salidas**: `workDir`, `commitHash`.
+
+### `create-release`
+Crea una release en el proveedor Git del repositorio — los cinco proveedores están admitidos.
+- **Configuración**: `tagName`, `targetBranch`, `releaseTitle`, `releaseNotes`, `draft`, `prerelease`.
+- **Salidas**: `releaseId`, `releaseUrl`, `tagName`.
+
+### `update-commit-status`
+Actualiza el estado del commit en el proveedor Git (pending/success/failure), visible directamente en la pull request / merge request.
+- **Configuración**: `state` (`pending` / `success` / `failure` / `error`), `context` (nombre del check, por defecto `nexploy/pipeline`), `description`.
+- **Salidas**: `provider`, `state`, `sha`, `context`, `description`.
+
+## Build y validación
+
+### `validate-dockerfile`
+Comprueba la sintaxis de un Dockerfile sin lanzar un build. Útil al principio de una pipeline para fallar rápido (lint) antes de consumir recursos de build.
+- **Configuración**: `dockerfilePath` (ruta relativa, por defecto `Dockerfile`).
+- **Entradas**: `workDir`.
+- **Salidas**: `workDir`, `dockerfilePath`.
+
+### `validate-compose`
+Comprueba la sintaxis de un archivo `docker-compose.yml` sin desplegar.
+- **Configuración**: `composeFileName` (por defecto `docker-compose.yml`), `composeFilePath` (carpeta relativa opcional), `noCache`.
+- **Entradas**: `workDir`.
+- **Salidas**: `workDir`, `composePath`.
+
+### `build-docker-image`
+Construye una imagen Docker a partir de un Dockerfile. **A usar únicamente para un despliegue basado en un solo Dockerfile** — no lo coloques antes de `deploy-compose`, que gestiona su propio build internamente mediante `docker compose build`.
+- **Configuración**: `dockerfilePath`, `dockerfileFilePath` (ruta de archivo opcional si es distinta), `imageName`.
+- **Entradas**: `workDir`.
+- **Salidas**: `imageId`, `imageName`.
+
+## Registries Docker
+
+### `push-to-registry`
+Empuja una imagen construida hacia un registry (Docker Hub o registry privado configurado).
+- **Configuración**: `registryId`, `registryName`, `imageName`.
+- **Entradas**: `imageName`.
+- **Salidas**: `pushedImages`, `registryUrl`, `tag`.
+
+### `pull-from-registry`
+Descarga una imagen desde Docker Hub o un registry privado, sin pasar por un build.
+- **Configuración**: `registryId` (por defecto `docker-hub`), `imageName`.
+- **Salidas**: `imageName`.
+
+## Despliegue
+
+### `compose-build`
+Construye únicamente las imágenes de un stack `docker-compose`, sin arrancar los contenedores. Útil para separar la construcción del arranque, o para encadenar un `compose-run` de tests antes de desplegar.
+- **Configuración**: `composeFileName` (por defecto `docker-compose.yml`), `composeFilePath` (carpeta relativa opcional), `noCache` (rebuild sin caché de Docker).
+- **Entradas**: `workDir` (obligatorio).
+- **Salidas**: `projectName`, `composeFile`, `services`, `builtServices`, `composeConfig`.
+
+### `deploy-compose`
+Despliega un stack `docker-compose` (ejecuta `docker compose build` y luego `up -d` internamente — no hace falta un `build-docker-image` aparte). Las variables de entorno del repositorio se inyectan automáticamente, fusionadas con las recibidas de un nodo aguas arriba (`set-env-vars`, `fetch-secrets-*`), que tienen prioridad en caso de clave duplicada.
+- **Configuración**: `composeFileName` (por defecto `docker-compose.yml`), `composeFilePath` (carpeta relativa opcional), `noCache` (rebuild sin caché de Docker).
+- **Entradas**: `workDir` (obligatorio, debe venir de un nodo de clonado aguas arriba).
+- **Salidas**: `projectName`, `containers`, `composeConfig`. Admite un nodo de enganche opcional `save-version` en su handle inferior.
+- **Seguridad**: las variables se escriben en un archivo `.env` temporal justo antes del `up` (nunca presente durante el `build`), y se garantiza un `.dockerignore` que excluye `.env`/`.env.*` en el contexto de build.
+
+### `compose-up`
+Arranca un stack ya construido por `compose-build`. No reconstruye nada: consume el `composeFile` y el `projectName` producidos aguas arriba.
+- **Configuración**: `recreate` (recrear los contenedores, activado por defecto), `removeOrphans` (eliminar los contenedores huérfanos, activado por defecto), `keepComposeFile` (conservar el archivo compose resuelto tras el arranque).
+- **Entradas**: `workDir`, `composeFile`, `projectName` (deben venir de un `compose-build` aguas arriba).
+- **Salidas**: `projectName`, `containers`, `composeConfig`.
+
+### `set-environment`
+Selecciona el entorno Docker (host de destino) activo para todos los nodos aguas abajo de esta pipeline. **No** define variables de entorno de aplicación — para eso, ver la sección «Variables y secretos» más abajo.
+- **Configuración**: `environmentId`.
+- **Salidas**: `environmentId`.
+
+### `trigger-stage-build`
+Lanza un nuevo build en otra etapa de despliegue (stage) del mismo repositorio. Solo se ejecuta si la pipeline actual ha tenido éxito — se usa normalmente para promover un build de preproducción validado hacia producción. **Nodo final**: colócalo al final de la cadena del camino de éxito.
+- **Configuración**: `stageId`, `stageName`, `triggerOnFailure` (se dispara incluso si la pipeline actual falla).
+- **Salidas**: `triggered`, `triggeredStageId`, `triggeredBuildId`.
+
+### `compose-run`
+Ejecuta un comando puntual en un servicio del stack (`docker compose run`), normalmente para lanzar tests o una migración antes del arranque.
+- **Configuración**: `service` (servicio objetivo), `command`, `workingDir`, `user`, `noDeps` (no arrancar los servicios vinculados), `continueOnError` (no hacer fallar la pipeline con un código de salida distinto de cero).
+- **Entradas**: `workDir`, `composeFile`, `projectName`.
+- **Salidas**: `exitCode`, `service`, `projectName`, `composeFile`.
+
+## Contenedores Docker
+
+### `create-container`
+Crea un contenedor Docker a partir de una imagen (sin arrancarlo — encadena `start-container` para lanzarlo). Las variables de entorno del repositorio se inyectan automáticamente, y pueden sobrescribirse con `envVarsSource` (referencia a una salida aguas arriba) y `envVars` (valores introducidos directamente en el nodo).
+- **Configuración**: `containerName`, `imageName`, `restartPolicy` (`no` / `always` / `on-failure` / `unless-stopped`), `networkName`, `ports` / `portsSource`, `envVars` / `envVarsSource`, `volumes` / `volumesSource`.
+- **Salidas**: `containerId`, `containerName`, `imageName`.
+
+### `start-container`
+Arranca un contenedor existente. Se coloca normalmente justo después de `create-container`.
+- **Configuración**: `containerId` (referenciable).
+- **Entradas**: `containerId`.
+- **Salidas**: `containerId`.
+
+### `stop-container`
+Detiene un contenedor en ejecución.
+- **Configuración**: `containerId`.
+- **Entradas**: `containerId`.
+- **Salidas**: `containerId`.
+
+### `restart-container`
+Reinicia un contenedor.
+- **Configuración**: `containerId`.
+- **Entradas**: `containerId`.
+- **Salidas**: `containerId`.
+
+### `remove-container`
+Retira un contenedor detenido (sin forzar la parada si sigue en ejecución).
+- **Configuración**: `containerId`.
+- **Entradas**: `containerId`.
+- **Salidas**: `containerId`.
+
+### `delete-container`
+Elimina un contenedor, con la opción de forzar la eliminación aunque esté en ejecución y de eliminar sus volúmenes anónimos asociados.
+- **Configuración**: `containerId`, `force`.
+- **Entradas**: `containerId`.
+- **Salidas**: ninguna.
+
+### `prune-containers`
+Elimina todos los contenedores detenidos del entorno de destino para liberar espacio en disco.
+- **Configuración**: `olderThan` (p. ej. `24h`, solo afecta a los contenedores detenidos desde hace más tiempo), `filter` (filtro por label, p. ej. `label=project=myapp`).
+- **Salidas**: `removedContainers`, `reclaimedSpace`.
+
+### `run-command-in-container`
+Ejecuta un comando de shell dentro de un contenedor en ejecución (mediante `docker exec`).
+- **Configuración**: `containerId`, `command`, `workdir` (ruta absoluta en el contenedor, por defecto `/app`), `user`, `continueOnError` (no hace fallar la pipeline si el comando devuelve un código distinto de cero).
+- **Entradas**: `containerId`.
+- **Salidas**: `exitCode`.
+
+## Redes y volúmenes Docker
+
+### `create-network`
+Crea una red Docker.
+- **Configuración**: `name`, `driver` (por defecto `bridge`).
+- **Salidas**: `networkId`, `networkName`.
+
+### `delete-network`
+Elimina una red Docker.
+- **Configuración**: `networkId`, `force`.
+- **Salidas**: `deletedNetwork`.
+
+### `create-volume`
+Crea un volumen Docker con nombre.
+- **Configuración**: `name`, `driver` (opcional).
+- **Salidas**: `volumeName`.
+
+### `delete-volume`
+Elimina un volumen Docker.
+- **Configuración**: `volumeName`, `force`.
+- **Salidas**: `deletedVolume`.
+
+### `prune-volumes`
+Elimina los volúmenes Docker no utilizados del entorno de destino para liberar espacio en disco.
+- **Configuración**: `all` (incluye también los volúmenes con nombre, no solo los anónimos, desactivado por defecto), `filter` (filtro por label, p. ej. `label=project=myapp`).
+- **Salidas**: `removedVolumes`, `reclaimedSpace`.
+
+## Imágenes Docker
+
+### `tag-image`
+Crea un nuevo tag para una imagen Docker existente.
+- **Configuración**: `sourceImage`, `targetTag`.
+- **Entradas**: `imageId`.
+- **Salidas**: `sourceImage`, `targetTag`, `taggedImage`.
+
+### `scan-image`
+Analiza una imagen Docker en busca de vulnerabilidades mediante Trivy.
+- **Configuración**: `image`, `trivyVersion` (por defecto `canary`), `severity` (umbral mínimo: `CRITICAL` / `HIGH` / `MEDIUM` / `LOW`), `exitOnVulnerabilities` (hace fallar la pipeline si se encuentran vulnerabilidades por encima del umbral).
+- **Entradas**: `imageId`.
+- **Salidas**: `image`, `vulnerabilities`, `critical`, `high`.
+
+### `prune-images`
+Limpia las imágenes Docker no utilizadas para liberar espacio en disco.
+- **Configuración**: `filter` (opcional), `olderThan` (opcional), `dangling` (solo afecta a las imágenes «dangling», activado por defecto).
+- **Salidas**: `removedImages`, `reclaimedSpace`.
+
+### `prune-build-cache`
+Vacía la caché de build de Docker (`docker builder prune`) para liberar espacio en disco.
+- **Configuración**: `all` (elimina también la caché aún usada por imágenes existentes), `keepStorage` (p. ej. `10GB`, limita la caché conservada), `filter` (p. ej. `until=24h`, solo afecta a las entradas antiguas).
+- **Salidas**: `deletedCaches`, `reclaimedSpace`.
+
+### `delete-image`
+Elimina una imagen Docker específica.
+- **Configuración**: `imageId`, `force`.
+- **Entradas**: `imageId`.
+- **Salidas**: `deletedImageId`.
+
+## Docker Swarm
+
+### `create-service`
+Crea un servicio de Docker Swarm. Requiere que el modo Swarm esté activado en el entorno de destino.
+- **Configuración**: `serviceName`, `imageName`, `mode` (`replicated` / `global`), `replicas`, `ports` / `portsSource`, `envVars` / `envVarsSource`, `networks`, `constraints` (restricciones de ubicación de Swarm).
+- **Salidas**: `serviceId`, `serviceName`, `imageName`.
+
+### `update-service`
+Actualiza un servicio Swarm existente (rolling update).
+- **Configuración**: `serviceId`, `serviceName`, `image` (nueva imagen), `forceUpdate`.
+- **Entradas**: `serviceId`.
+- **Salidas**: `serviceName`, `image`.
+
+### `scale-service`
+Ajusta el número de réplicas de un servicio Swarm.
+- **Configuración**: `serviceId`, `serviceName`, `replicas`.
+- **Entradas**: `serviceId`.
+- **Salidas**: `serviceName`, `replicas`.
+
+## Variables y secretos
+
+### `set-env-vars`
+Define variables de entorno inline (clave/valor introducidos directamente en el nodo), transmitidas a los nodos de despliegue aguas abajo (`deploy-compose`, `create-container`). Se añaden a las variables del repositorio y las sobrescriben en caso de clave idéntica.
+- **Configuración**: `vars` (lista de pares clave/valor).
+- **Salidas**: `envVariables`.
+
+### `fetch-secrets-vault`
+Recupera secretos desde una instancia de HashiCorp Vault y los inyecta como variables de entorno para los nodos aguas abajo.
+- **Configuración**: `endpoint`, `token`, `secretPath`, `kvVersion` (`v1` o `v2`), `namespace` (opcional).
+- **Salidas**: `envVariables`, `secretCount`.
+
+### `fetch-secrets-doppler`
+Recupera secretos desde Doppler y los inyecta como variables de entorno para los nodos aguas abajo.
+- **Configuración**: `serviceToken`, `project` (opcional), `config` (opcional).
+- **Salidas**: `envVariables`, `secretCount`.
+
+### `fetch-secrets-infisical`
+Recupera secretos desde Infisical y los inyecta como variables de entorno para los nodos aguas abajo.
+- **Configuración**: `siteUrl` (por defecto `https://app.infisical.com`), `authMethod` (`universal-auth` o `access-token`), `clientId` y `clientSecret` (para Universal Auth) o `accessToken`, `projectId`, `environment` (slug, por defecto `dev`), `secretPath` (por defecto `/`), `recursive`, `expandSecretReferences`, `includeImports`.
+- **Salidas**: `envVariables`, `secretCount`.
+
+## Control de flujo
+
+### `condition`
+Puerta lógica Y/O: bloquea la ejecución de los nodos aguas abajo según si todos (`and`) o al menos uno (`or`) de los nodos aguas arriba han tenido éxito.
+- **Configuración**: `operator` (`and` / `or`).
+- **Salidas**: `passed`, `branch`.
+
+### `delay`
+Añade un retardo fijo (en segundos) entre dos etapas de la pipeline.
+- **Configuración**: `seconds` (por defecto 5).
+- **Salidas**: `delayed`.
+
+### `wait-for-health`
+Espera a que el healthcheck de Docker de un contenedor pase al estado «healthy» antes de continuar.
+- **Configuración**: `containerId`, `timeout` (segundos, por defecto 60), `interval` (frecuencia de comprobación, por defecto 5s).
+- **Entradas**: `containerId`.
+- **Salidas**: `containerId`, `healthy`.
+
+### `wait-for-port`
+Espera a que un puerto TCP esté abierto y acepte conexiones dentro de un contenedor.
+- **Configuración**: `containerId`, `port` (por defecto 80), `timeout` (por defecto 60s), `interval` (por defecto 3s).
+- **Entradas**: `containerId`.
+- **Salidas**: `containerId`, `port`, `open`.
+
+### `wait-for-url`
+Consulta una URL en bucle hasta que devuelva el código de estado HTTP esperado.
+- **Configuración**: `url`, `expectedStatus` (por defecto 200), `timeout` (por defecto 60s), `interval` (por defecto 5s), `method` (`GET` / `POST` / `HEAD`).
+- **Salidas**: `url`, `status`.
+
+## HTTP y webhooks
+
+### `http-request`
+Realiza una petición HTTP hacia una API externa.
+- **Configuración**: `url`, `method` (`GET`/`POST`/`PUT`/`DELETE`/`PATCH`/`HEAD`), `headers` (lista clave/valor), `body`, `expectedStatus` (por defecto 200), `continueOnError` (no hace fallar la pipeline si la petición falla o devuelve otro código).
+- **Salidas**: `status`, `body`.
+
+## Notificaciones y monitorización
+
+### `send-notification`
+Envía una notificación mediante webhook (Slack, Discord, etc.) según el resultado de la pipeline. **Nodo final** típico.
+- **Configuración**: `webhookUrl`, `triggerOn` (`success` / `failure` / `always`, acumulables), `message` (opcional).
+- **Salidas**: `sent`.
+
+### `check-container-logs`
+Busca un patrón en los logs de un contenedor y puede hacer fallar la pipeline según el resultado.
+- **Configuración**: `containerId`, `pattern`, `since` (ventana temporal), `timeout` (por defecto 30s), `failIfFound` (falla si se encuentra el patrón, en lugar del comportamiento por defecto que falla si está ausente).
+- **Entradas**: `containerId`.
+- **Salidas**: `found`, `matchedLine`, `containerId`.
+
+## Caché
+
+### `cache-save`
+Guarda una carpeta (p. ej. `node_modules`) en un volumen de caché para acelerar los builds siguientes.
+- **Configuración**: `volumeName`, `sourcePath` (ruta relativa a guardar), `cacheKey` (opcional, para invalidar la caché al cambiar).
+- **Salidas**: ninguna.
+
+### `cache-restore`
+Restaura una carpeta previamente almacenada en caché por `cache-save`, antes de un build.
+- **Configuración**: `volumeName`, `cachePath` (destino relativo), `cacheKey` (opcional).
+- **Salidas**: ninguna.
+
+## Dominios y SSL
+
+### `add-domain`
+Añade un dominio personalizado y una regla de enrutamiento de Traefik para un contenedor.
+- **Configuración**: `host`, `path` / `internalPath` (reescritura de ruta), `stripPath`, `containerName`, `containerPort` (por defecto 3000), `https` (requiere entonces `certificateId`), opciones de Cloudflare (`cloudflareCredentialId`, `cloudflareZoneId`, `cloudflareZoneName`) para la gestión DNS automática.
+- **Salidas**: `host`, `containerPort`, `domainId`, `environmentId`.
+
+### `remove-domain`
+Retira un dominio y su regla de enrutamiento de Traefik asociada para el repositorio.
+- **Configuración**: `host`.
+- **Salidas**: `host`, `removed`.
+
+### `add-ssl-certificate`
+Aprovisiona un certificado SSL para un dominio, mediante Let's Encrypt o un certificado personalizado importado.
+- **Configuración**: `certType` (`LETS_ENCRYPT` / `CUSTOM`), `name`, `domain`, `email` (para Let's Encrypt), `agreedToTos`, `certificate` / `privateKey` (si es `CUSTOM`).
+- **Salidas**: `certificateId`, `domain`.
+
+## Archivos, copia de seguridad y calidad
+
+### `download-file`
+Descarga un archivo desde una URL al directorio de trabajo de la pipeline.
+- **Configuración**: `url`, `destinationPath` (carpeta relativa de destino, por defecto `.`), `filename` (opcional).
+- **Salidas**: `url`, `outputFile`, `filename`, `sizeBytes`.
+
+### `backup-volume-bucket-storage`
+Guarda el contenido de un volumen Docker en un bucket de almacenamiento de objetos (S3 o compatible).
+- **Configuración**: `volumeName`, `accountId` (cuenta de almacenamiento configurada en Nexploy), `bucket`.
+- **Salidas**: `fileName`, `bucket`, `volumeName`.
+
+### `sonarqube-scan`
+Lanza un análisis de calidad de código de SonarQube. Puede hacer fallar la pipeline en el quality gate y/o si una métrica (p. ej. cobertura de tests) está por debajo de una puntuación mínima requerida.
+- **Configuración**: `mode` (`local`: instancia de SonarQube efímera lanzada por la pipeline, o `custom`: instancia externa), `projectKey`, `token`, `sources` (por defecto `.`), `exclusions`, `qualityGate` (hace fallar en el quality gate de SonarQube), `enforceMinScore` + `scoreMetric` (`coverage` / `line_coverage` / `branch_coverage`) + `minScore` (por defecto 80), `timeoutSeconds` (por defecto 300), `serverUrl` (por defecto `https://sonarcloud.io` en modo `custom`), `organization`, `sonarqubeVersion` y `sonarqubePort` (en modo `local`).
+- **Entradas**: `workDir`.
+- **Salidas**: `qualityGatePassed`, `projectKey`.
+
+### `save-version`
+- **Salidas**: `versionNumber`.
+Registra el build actual como una versión numerada, consultable y restaurable (rollback) desde la pestaña **Versiones** del repositorio. **Nodo de enganche (attach-node)**: se conecta al handle de enganche inferior de `deploy-compose` o `create-container` mediante `sourceHandle: 'save-version'` / `targetHandle: 'input'` — nunca mediante el handle de salida estándar a la derecha del nodo.
+
+### `clean-workdir`
+Elimina el directorio de trabajo clonado para liberar espacio en disco. **Nodo final**: debe ser el último nodo de toda pipeline que haya clonado un repositorio.
+- **Entradas**: `workDir`.
+- **Salidas**: `cleaned`.

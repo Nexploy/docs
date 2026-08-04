@@ -1,0 +1,39 @@
+---
+title: Pipeline di build
+description: Grafo di nodi eseguito da Inngest a ogni deployment
+---
+
+Un deployment non esegue un elenco di passaggi fisso: esegue il **grafo di nodi** configurato per lo stage distribuito, orchestrato da Inngest. Ogni nodo è uno step Inngest, il che rende l'esecuzione durevole e permette di trasmettere i log in diretta.
+
+## Che cosa viene eseguito
+
+Ogni stage di un repository possiede la propria pipeline, modificata nell'[editor di nodi](/it/pipelines/visual-editor). All'avvio di un build, il grafo corrente viene **congelato in uno snapshot** allegato al build: modificare la pipeline in seguito non riscrive mai la cronologia dei build passati.
+
+L'orchestratore percorre il grafo, esegue ogni nodo non appena tutti i suoi nodi a monte sono terminati e trasmette i loro output a valle. Un ramo la cui condizione non è soddisfatta viene contrassegnato come *skipped*, così come tutto ciò che lo segue.
+
+## Partire da un modello
+
+Nell'editor sono disponibili due modelli pronti all'uso, per non partire da una tela vuota:
+
+| Modello | Nodi |
+|---|---|
+| **Dockerfile** | `clone-repository` → `build-docker-image` → `create-container` |
+| **Docker Compose** | `clone-repository` → `validate-compose` → `deploy-compose` → `clean-workdir`, con `save-version` in derivazione |
+
+Sono solo punti di partenza — ogni nodo può essere aggiunto, eliminato o ricollegato. L'elenco completo è nel [catalogo dei nodi](/it/pipelines/node-types).
+
+## Stati del build
+
+```
+QUEUED → BUILDING → COMPLETED
+                  ↘ FAILED / CANCELLED
+```
+
+Ogni nodo porta inoltre il proprio stato e la propria durata, mostrati in diretta sul grafo durante il build.
+
+## Caratteristiche
+
+- Log trasmessi in tempo reale tramite SSE, nodo per nodo.
+- Annullamento possibile durante l'esecuzione.
+- Un build fallito **non** viene ripreso passo per passo: la pipeline si ferma e rilanciarla riesegue il grafo dall'inizio.
+- Le variabili d'ambiente del repository sono iniettate automaticamente in `deploy-compose` e `create-container`.
