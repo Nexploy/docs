@@ -1,0 +1,71 @@
+---
+title: Azioni in corso
+description: Monitoraggio in tempo reale delle operazioni Docker lunghe, con fasi, avanzamento e annullamento
+---
+
+Scaricare un'immagine da diversi gigabyte o spostare un contenitore da un host all'altro non sta nel tempo di una richiesta HTTP. Queste operazioni diventano **attività**: `docker-api` le esegue in background e ne trasmette l'avanzamento, e l'indicatore in cima all'interfaccia le mantiene visibili finché non le scarti.
+
+L'indicatore compare solo finché resta almeno un'attività da mostrare. Un contatore con spinner indica quante operazioni sono in corso; altrimenti mostra quante attività concluse non hai ancora scartato.
+
+## Due forme di monitoraggio
+
+| Forma | Comportamento | Operazioni |
+|---|---|---|
+| **Attività in background** | La richiesta ritorna subito con un identificativo di attività. Fasi, avanzamento e annullamento — quando previsto — vengono trasmessi in seguito. | `image-pull`, `image-mirror`, `container-migrate` |
+| **Attività tracciata** | La richiesta resta aperta fino alla fine dell'operazione. L'attività è **silenziosa**: alimenta l'indicatore, ma non genera notifica di fine né dichiara fasi. | tutte le altre |
+
+Un'attività tracciata viene creata solo se l'operazione proviene da un'azione utente. Ciò che avvia il sistema stesso — pipeline, pianificazioni, sincronizzazioni interne — viene eseguito senza attività.
+
+## Il catalogo
+
+| Risorsa | Tipi di attività |
+|---|---|
+| Contenitori | `container-create`, `container-start`, `container-stop`, `container-restart`, `container-pause`, `container-unpause`, `container-rename`, `container-restart-policy`, `container-recreate`, `container-migrate`, `container-remove`, `container-prune` |
+| Immagini | `image-pull`, `image-mirror`, `image-tag`, `image-remove`, `image-prune` |
+| Reti | `network-create`, `network-remove` |
+| Volumi | `volume-create`, `volume-remove`, `volume-prune` |
+| Stack Compose | `stack-start`, `stack-stop`, `stack-restart`, `stack-pause`, `stack-unpause`, `stack-remove` |
+
+Ogni tipo è legato a una risorsa — contenitore, immagine, rete o volume — ed è quella risorsa a decidere i permessi applicati. Le attività di stack contano come attività di contenitore.
+
+## Fasi e avanzamento
+
+Le attività in background dichiarano le proprie fasi in anticipo, e l'avanzamento si calcola dalle fasi già concluse:
+
+| Attività | Fasi |
+|---|---|
+| `container-migrate` | `image`, `networks`, `create`, `volumes`, `start`, `source` |
+| `image-mirror` | `pull`, `tag`, `push`, `cleanup` |
+| `image-pull` | `pull` |
+
+Il download di un'immagine sostituisce quel calcolo con l'avanzamento reale del trasferimento riportato da Docker. Una fase è `pending`, `running`, `done`, `skipped` o `failed`; un'attività è `running`, `succeeded`, `failed` o `cancelled`.
+
+Un'attività può anche accumulare **avvisi** senza fallire: un contenitore creato che non parte, per esempio, termina con successo e un avviso invece di fallire.
+
+## Annullare, scartare, aprire il risultato
+
+- **Annulla** viene proposto solo se l'attività si è dichiarata annullabile e hai il permesso `manage` sulla sua risorsa. Oggi lo è solo `container-migrate`, che blocca l'annullamento una volta superato il punto di non ritorno. Un'attività annullata termina come `cancelled`.
+- **Scarta** rimuove un'attività conclusa dal tuo indicatore. È locale al tuo browser: l'elenco delle attività scartate resta nell'archiviazione locale e non incide su ciò che vedono gli altri.
+- Un'attività riuscita che ha creato qualcosa mostra un **collegamento al risultato**. Se il risultato vive su un altro host Docker — il caso di una migrazione — il collegamento cambia prima l'ambiente selezionato.
+
+Un'attività non silenziosa che termina genera anche una notifica, più una notifica per ogni avviso accumulato.
+
+## Chi vede cosa
+
+Le attività sono filtrate lato server prima di raggiungerti. Un amministratore le vede tutte; altrimenti vedi solo un'attività la cui risorsa appartiene alla tua organizzazione e su cui il tuo ruolo concede `read`. L'annullamento richiede `manage` sulla stessa risorsa, ed è ricontrollato lato server al momento del clic.
+
+## Ciclo di vita
+
+Le attività vivono in memoria dentro `docker-api`, mai nel database:
+
+- un'attività conclusa scompare **30 minuti** dopo la fine;
+- vengono conservate solo le **50** attività concluse più recenti;
+- un'attività in corso non può essere né scartata né eliminata.
+
+<Callout type="warn" title="Un riavvio cancella le attività">
+  Riavviare `docker-api` svuota l'elenco. L'operazione Docker già applicata resta applicata: ciò che si perde è il suo monitoraggio, non il suo effetto. Per uno storico duraturo, vedi il [registro attività](/it/security/activity-log).
+</Callout>
+
+## Flusso in tempo reale
+
+Le attività arrivano sul canale `tasks` del multiplexer SSE, accanto ai canali contenitori, immagini e docker. Alla connessione il server invia lo stato completo, poi creazioni, aggiornamenti e rimozioni man mano che avvengono, con un heartbeat ogni 15 secondi.

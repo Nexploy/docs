@@ -1,0 +1,79 @@
+---
+title: Journal d'activité
+description: Piste d'audit persistante de chaque action effectuée sur l'instance
+---
+
+Chaque action qui modifie l'instance laisse une entrée en base : qui l'a lancée, sur quoi, depuis quelle adresse IP, combien de temps elle a pris et si elle a réussi, échoué ou été refusée. Contrairement aux [actions en cours](/features/tasks), qui ne vivent qu'en mémoire, le journal d'activité survit aux redémarrages.
+
+Il se consulte depuis **Administration → Activité**.
+
+## Ce qui est enregistré
+
+| Source | Couverture |
+|---|---|
+| `SERVER_ACTION` | **Toutes** les server actions. L'enregistrement est branché sur le client d'action lui-même — une action qui existe est une action journalisée. |
+| `API_ROUTE` | Les routes API explicitement auditées, et seulement pour les méthodes `POST`, `PUT`, `PATCH` et `DELETE`. |
+
+Comme toutes les mutations Docker passent par des server actions, elles apparaissent toutes ; les routes API servent les lectures, qui ne sont pas journalisées.
+
+Trois issues sont distinguées :
+
+| Statut | Signification |
+|---|---|
+| `SUCCESS` | L'action est allée au bout. |
+| `FAILURE` | L'action a échoué : erreur serveur ou validation refusée. |
+| `DENIED` | Les permissions ont bloqué l'action. |
+
+Une tentative refusée est journalisée exactement comme une tentative réussie — c'est le principal intérêt d'une piste d'audit.
+
+<Callout>
+  Si l'écriture du journal échoue, l'erreur est enregistrée dans les logs du serveur mais l'action elle-même n'est pas interrompue. Le journal ne peut pas faire tomber l'instance.
+</Callout>
+
+## Anatomie d'une entrée
+
+| Champ | Contenu |
+|---|---|
+| `name` | Nom de l'action, par exemple `activity.purge`. Le dernier point le scinde en ressource et action, ce qui rend le journal filtrable. |
+| Acteur | Type (`USER`, `API_KEY`, `SYSTEM`), identifiant, e-mail, rôle et organisation au moment de l'action. |
+| Cible | Type, identifiant et nom, déduits de l'entrée de l'action — identifiant de conteneur, nom de volume, domaine, e-mail… Pour une action portant sur plusieurs cibles, la première est retenue, suffixée du nombre restant. |
+| Contexte | Environnement Docker, adresse IP (`x-forwarded-for`, sinon `x-real-ip`), user-agent. |
+| Résultat | Durée en millisecondes et, en cas d'échec, le message d'erreur (tronqué à 1 000 caractères). |
+| `metadata` | L'entrée complète de l'action, expurgée. |
+
+L'acteur est conservé sous forme de champs plats en plus de la relation vers l'utilisateur : supprimer un compte détache la relation mais laisse l'e-mail et le rôle enregistrés, et l'entrée d'audit reste lisible.
+
+## Expurgation des secrets
+
+Les métadonnées ne sont jamais écrites brutes. Toute clé sensible — mot de passe, token, secret, clé d'API, clé privée, certificat et matériel TLS, codes de secours, `value` — est remplacée par `[redacted]`, quelle que soit sa profondeur dans l'objet.
+
+Les gardes-fous de taille s'appliquent en plus : profondeur maximale de 6 niveaux, 25 éléments par tableau, 512 caractères par chaîne, et 8 000 caractères pour l'entrée sérialisée, au-delà desquels seul un aperçu tronqué est conservé.
+
+## Consulter le journal
+
+La table est paginée côté serveur, 50 entrées par page par défaut, triée par date décroissante. Elle est triable sur la date, le nom, l'acteur, son rôle, la source, le statut et la durée, et la recherche porte sur le nom de l'action, le nom et l'identifiant de la cible, l'e-mail de l'acteur et le message d'erreur. L'API sous-jacente accepte en plus un filtrage par nom, ressource, statut, source, acteur et intervalle de dates.
+
+Cliquer sur une ligne ouvre le détail de l'entrée, métadonnées expurgées comprises.
+
+La page est branchée sur un flux SSE dédié : les nouvelles entrées et les purges y sont poussées en direct, avec un battement de cœur toutes les 30 secondes.
+
+## Rétention et purge
+
+La rétention se règle depuis **Administration → Paramètres** :
+
+- valeur par défaut : **90 jours**, réglable de 0 à 3 650 ;
+- **0 désactive la purge** — les entrées sont conservées indéfiniment ;
+- une purge automatique tourne **tous les jours à 04:00 UTC** et supprime les entrées plus anciennes que la rétention ;
+- un bouton déclenche la même purge immédiatement.
+
+La date de la dernière purge et le nombre d'entrées supprimées sont enregistrés et affichés dans la carte des paramètres.
+
+<Callout type="warn" title="La purge est définitive">
+  Une purge est un `DELETE` en base, sans corbeille. Si votre conformité exige de conserver la piste d'audit plus longtemps que la rétention configurée, exportez-la avant, ou mettez la rétention à 0.
+</Callout>
+
+## Permissions
+
+Le journal est réservé au rôle **administrateur** : `activity.read` ouvre la page et le flux, `activity.manage` autorise à changer la rétention et à déclencher une purge. Les rôles `guest` et `developer` n'ont aucune permission sur cette ressource, et l'entrée de menu ne leur apparaît pas.
+
+Modifier la rétention et purger sont elles-mêmes des actions journalisées.

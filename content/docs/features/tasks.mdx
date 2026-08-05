@@ -1,0 +1,71 @@
+---
+title: Actions en cours
+description: Suivi temps réel des opérations Docker longues, avec étapes, progression et annulation
+---
+
+Tirer une image de plusieurs gigaoctets ou déplacer un conteneur d'un hôte à l'autre ne tient pas dans le temps d'une requête HTTP. Ces opérations deviennent des **tâches** : le `docker-api` les exécute en arrière-plan et diffuse leur progression, et l'indicateur en haut de l'interface les affiche jusqu'à ce que vous les écartiez.
+
+L'indicateur n'apparaît que lorsqu'il reste au moins une tâche à montrer. Un compteur avec spinner indique le nombre d'opérations en cours ; sinon, il affiche le nombre de tâches terminées non encore écartées.
+
+## Deux formes de suivi
+
+| Forme | Comportement | Opérations concernées |
+|---|---|---|
+| **Tâche en arrière-plan** | La requête revient tout de suite avec un identifiant de tâche. Étapes, progression et annulation éventuelle sont diffusées ensuite. | `image-pull`, `image-mirror`, `container-migrate` |
+| **Tâche suivie** | La requête reste ouverte jusqu'au bout de l'opération. La tâche est **silencieuse** : elle alimente l'indicateur, mais ne déclenche ni notification de fin ni étapes. | toutes les autres |
+
+Une tâche suivie n'est créée que si l'opération vient d'une action utilisateur. Ce que déclenche le système lui-même — pipelines, planifications, synchronisations internes — s'exécute sans tâche.
+
+## Le catalogue
+
+| Ressource | Types de tâches |
+|---|---|
+| Conteneurs | `container-create`, `container-start`, `container-stop`, `container-restart`, `container-pause`, `container-unpause`, `container-rename`, `container-restart-policy`, `container-recreate`, `container-migrate`, `container-remove`, `container-prune` |
+| Images | `image-pull`, `image-mirror`, `image-tag`, `image-remove`, `image-prune` |
+| Réseaux | `network-create`, `network-remove` |
+| Volumes | `volume-create`, `volume-remove`, `volume-prune` |
+| Stacks Compose | `stack-start`, `stack-stop`, `stack-restart`, `stack-pause`, `stack-unpause`, `stack-remove` |
+
+Chaque type est rattaché à une ressource — conteneur, image, réseau ou volume — et c'est cette ressource qui décide des permissions appliquées. Les tâches de stack comptent comme des tâches de conteneur.
+
+## Étapes et progression
+
+Les tâches en arrière-plan déclarent leurs étapes à l'avance, et la progression se calcule à partir des étapes réglées :
+
+| Tâche | Étapes |
+|---|---|
+| `container-migrate` | `image`, `networks`, `create`, `volumes`, `start`, `source` |
+| `image-mirror` | `pull`, `tag`, `push`, `cleanup` |
+| `image-pull` | `pull` |
+
+Un téléchargement d'image remplace ce calcul par la progression réelle du transfert remontée par Docker. Une étape est `pending`, `running`, `done`, `skipped` ou `failed` ; une tâche est `running`, `succeeded`, `failed` ou `cancelled`.
+
+Une tâche peut aussi accumuler des **avertissements** sans échouer — un conteneur créé mais qui ne démarre pas, par exemple, réussit avec un avertissement plutôt que d'échouer.
+
+## Annuler, écarter, ouvrir le résultat
+
+- **Annuler** n'est proposé que si la tâche s'est déclarée annulable et si vous avez la permission `manage` sur sa ressource. Aujourd'hui seule `container-migrate` l'est, et elle verrouille l'annulation une fois passé le point de non-retour. Une tâche annulée finit en `cancelled`.
+- **Écarter** retire une tâche terminée de votre indicateur. C'est local à votre navigateur : la liste des tâches écartées est conservée en stockage local et ne touche pas ce que voient les autres.
+- Une tâche réussie qui a créé quelque chose affiche un **lien vers le résultat**. Si le résultat vit sur un autre hôte Docker — le cas d'une migration — le lien bascule d'abord l'environnement sélectionné.
+
+Une tâche non silencieuse qui se termine déclenche aussi une notification, et une notification par avertissement accumulé.
+
+## Qui voit quoi
+
+Les tâches sont filtrées côté serveur avant de vous être diffusées. Un administrateur les voit toutes ; sinon, vous ne voyez qu'une tâche dont la ressource appartient à votre organisation et sur laquelle votre rôle donne la permission `read`. L'annulation demande `manage` sur cette même ressource, et est revérifiée côté serveur au moment du clic.
+
+## Durée de vie
+
+Les tâches vivent en mémoire dans le `docker-api`, jamais en base :
+
+- une tâche terminée disparaît **30 minutes** après sa fin ;
+- seules les **50** dernières tâches terminées sont conservées ;
+- une tâche en cours ne peut être ni écartée ni supprimée.
+
+<Callout type="warn" title="Un redémarrage efface les tâches">
+  Redémarrer le `docker-api` vide la liste. L'opération Docker déjà appliquée, elle, reste appliquée — c'est son suivi qui est perdu, pas son effet. Pour un historique durable, voir le [journal d'activité](/security/activity-log).
+</Callout>
+
+## Flux temps réel
+
+Les tâches arrivent par le canal `tasks` du multiplexeur SSE, à côté des canaux conteneurs, images et Docker. À la connexion, le serveur envoie l'état complet, puis les créations, mises à jour et suppressions au fil de l'eau, avec un battement de cœur toutes les 15 secondes.

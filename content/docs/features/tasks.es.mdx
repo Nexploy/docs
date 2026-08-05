@@ -1,0 +1,71 @@
+---
+title: Acciones en curso
+description: Seguimiento en tiempo real de las operaciones Docker largas, con etapas, progreso y cancelación
+---
+
+Descargar una imagen de varios gigabytes o mover un contenedor de un host a otro no cabe en el tiempo de una petición HTTP. Esas operaciones se convierten en **tareas**: `docker-api` las ejecuta en segundo plano y transmite su progreso, y el indicador de la parte superior de la interfaz las mantiene visibles hasta que las descartes.
+
+El indicador solo aparece mientras queda al menos una tarea que mostrar. Un contador con spinner indica cuántas operaciones están en curso; si no, muestra cuántas tareas terminadas aún no has descartado.
+
+## Dos formas de seguimiento
+
+| Forma | Comportamiento | Operaciones |
+|---|---|---|
+| **Tarea en segundo plano** | La petición vuelve de inmediato con un identificador de tarea. Las etapas, el progreso y la cancelación —cuando existe— se transmiten después. | `image-pull`, `image-mirror`, `container-migrate` |
+| **Tarea seguida** | La petición permanece abierta hasta el final de la operación. La tarea es **silenciosa**: alimenta el indicador, pero no genera notificación de fin ni declara etapas. | todas las demás |
+
+Una tarea seguida solo se crea si la operación procede de una acción de usuario. Lo que dispara el propio sistema —pipelines, planificaciones, sincronizaciones internas— se ejecuta sin tarea.
+
+## El catálogo
+
+| Recurso | Tipos de tarea |
+|---|---|
+| Contenedores | `container-create`, `container-start`, `container-stop`, `container-restart`, `container-pause`, `container-unpause`, `container-rename`, `container-restart-policy`, `container-recreate`, `container-migrate`, `container-remove`, `container-prune` |
+| Imágenes | `image-pull`, `image-mirror`, `image-tag`, `image-remove`, `image-prune` |
+| Redes | `network-create`, `network-remove` |
+| Volúmenes | `volume-create`, `volume-remove`, `volume-prune` |
+| Stacks Compose | `stack-start`, `stack-stop`, `stack-restart`, `stack-pause`, `stack-unpause`, `stack-remove` |
+
+Cada tipo está asociado a un recurso —contenedor, imagen, red o volumen— y ese recurso decide qué permisos se aplican. Las tareas de stack cuentan como tareas de contenedor.
+
+## Etapas y progreso
+
+Las tareas en segundo plano declaran sus etapas por adelantado, y el progreso se calcula a partir de las etapas ya resueltas:
+
+| Tarea | Etapas |
+|---|---|
+| `container-migrate` | `image`, `networks`, `create`, `volumes`, `start`, `source` |
+| `image-mirror` | `pull`, `tag`, `push`, `cleanup` |
+| `image-pull` | `pull` |
+
+Una descarga de imagen sustituye ese cálculo por el progreso real de la transferencia que reporta Docker. Una etapa es `pending`, `running`, `done`, `skipped` o `failed`; una tarea es `running`, `succeeded`, `failed` o `cancelled`.
+
+Una tarea también puede acumular **advertencias** sin fallar: un contenedor creado que no arranca, por ejemplo, termina con éxito y una advertencia en lugar de fallar.
+
+## Cancelar, descartar, abrir el resultado
+
+- **Cancelar** solo se ofrece si la tarea se declaró cancelable y tienes el permiso `manage` sobre su recurso. Hoy solo lo es `container-migrate`, y bloquea la cancelación una vez pasado el punto de no retorno. Una tarea cancelada termina en `cancelled`.
+- **Descartar** quita una tarea terminada de tu indicador. Es local a tu navegador: la lista de tareas descartadas se guarda en almacenamiento local y no afecta a lo que ven los demás.
+- Una tarea con éxito que ha creado algo muestra un **enlace al resultado**. Si el resultado vive en otro host Docker —el caso de una migración— el enlace cambia primero el entorno seleccionado.
+
+Una tarea no silenciosa que termina genera además una notificación, y una notificación por cada advertencia acumulada.
+
+## Quién ve qué
+
+Las tareas se filtran en el servidor antes de llegarte. Un administrador las ve todas; en caso contrario solo ves una tarea cuyo recurso pertenece a tu organización y sobre la que tu rol concede `read`. Cancelar exige `manage` sobre ese mismo recurso, y se vuelve a comprobar en el servidor al hacer clic.
+
+## Ciclo de vida
+
+Las tareas viven en memoria dentro de `docker-api`, nunca en la base de datos:
+
+- una tarea terminada desaparece **30 minutos** después de finalizar;
+- solo se conservan las **50** tareas terminadas más recientes;
+- una tarea en curso no se puede descartar ni eliminar.
+
+<Callout type="warn" title="Un reinicio borra las tareas">
+  Reiniciar `docker-api` vacía la lista. La operación Docker ya aplicada sigue aplicada: lo que se pierde es su seguimiento, no su efecto. Para un historial duradero, consulta el [registro de actividad](/es/security/activity-log).
+</Callout>
+
+## Flujo en tiempo real
+
+Las tareas llegan por el canal `tasks` del multiplexor SSE, junto a los canales de contenedores, imágenes y docker. Al conectar, el servidor envía el estado completo y después las creaciones, actualizaciones y eliminaciones según ocurren, con un latido cada 15 segundos.

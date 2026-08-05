@@ -1,0 +1,71 @@
+---
+title: Running actions
+description: Real-time tracking of long Docker operations, with steps, progress and cancellation
+---
+
+Pulling a multi-gigabyte image or moving a container from one host to another does not fit inside an HTTP request. Those operations become **tasks**: `docker-api` runs them in the background and streams their progress, and the indicator at the top of the interface keeps them visible until you dismiss them.
+
+The indicator only appears while there is at least one task left to show. A spinning counter gives the number of operations in progress; otherwise it shows how many finished tasks you have not dismissed yet.
+
+## Two forms of tracking
+
+| Form | Behaviour | Operations |
+|---|---|---|
+| **Background task** | The request returns immediately with a task id. Steps, progress and cancellation — when available — are streamed afterwards. | `image-pull`, `image-mirror`, `container-migrate` |
+| **Tracked task** | The request stays open until the operation is over. The task is **silent**: it feeds the indicator, but raises no completion notification and declares no steps. | every other one |
+
+A tracked task is only created when the operation comes from a user action. What the system triggers itself — pipelines, schedules, internal synchronisations — runs without a task.
+
+## The catalogue
+
+| Resource | Task kinds |
+|---|---|
+| Containers | `container-create`, `container-start`, `container-stop`, `container-restart`, `container-pause`, `container-unpause`, `container-rename`, `container-restart-policy`, `container-recreate`, `container-migrate`, `container-remove`, `container-prune` |
+| Images | `image-pull`, `image-mirror`, `image-tag`, `image-remove`, `image-prune` |
+| Networks | `network-create`, `network-remove` |
+| Volumes | `volume-create`, `volume-remove`, `volume-prune` |
+| Compose stacks | `stack-start`, `stack-stop`, `stack-restart`, `stack-pause`, `stack-unpause`, `stack-remove` |
+
+Every kind maps to a resource — container, image, network or volume — and that resource decides which permissions apply. Stack tasks count as container tasks.
+
+## Steps and progress
+
+Background tasks declare their steps up front, and progress is derived from the steps that have settled:
+
+| Task | Steps |
+|---|---|
+| `container-migrate` | `image`, `networks`, `create`, `volumes`, `start`, `source` |
+| `image-mirror` | `pull`, `tag`, `push`, `cleanup` |
+| `image-pull` | `pull` |
+
+An image pull replaces that calculation with the real transfer progress reported by Docker. A step is `pending`, `running`, `done`, `skipped` or `failed`; a task is `running`, `succeeded`, `failed` or `cancelled`.
+
+A task can also collect **warnings** without failing — a container that is created but does not start, for instance, succeeds with a warning rather than failing.
+
+## Cancel, dismiss, open the result
+
+- **Cancel** is only offered when the task declared itself cancellable and you hold the `manage` permission on its resource. Today only `container-migrate` is, and it locks cancellation once past the point of no return. A cancelled task ends as `cancelled`.
+- **Dismiss** removes a finished task from your indicator. It is local to your browser: the list of dismissed tasks is kept in local storage and does not affect what anyone else sees.
+- A succeeded task that created something shows a **link to the result**. When the result lives on another Docker host — the migration case — the link switches the selected environment first.
+
+A non-silent task that finishes also raises a notification, plus one notification per warning it collected.
+
+## Who sees what
+
+Tasks are filtered server-side before they reach you. An administrator sees all of them; otherwise you only see a task whose resource belongs to your organization and on which your role grants `read`. Cancelling requires `manage` on that same resource, and is re-checked server-side when you click.
+
+## Lifetime
+
+Tasks live in memory inside `docker-api`, never in the database:
+
+- a finished task disappears **30 minutes** after it ended;
+- only the **50** most recent finished tasks are kept;
+- a running task can be neither dismissed nor deleted.
+
+<Callout type="warn" title="A restart wipes the task list">
+  Restarting `docker-api` empties the list. The Docker operation that already applied stays applied — what is lost is its tracking, not its effect. For durable history, see the [activity log](/en/security/activity-log).
+</Callout>
+
+## Real-time stream
+
+Tasks arrive on the `tasks` channel of the SSE multiplexer, alongside the containers, images and docker channels. On connection the server sends the full state, then creations, updates and removals as they happen, with a heartbeat every 15 seconds.
