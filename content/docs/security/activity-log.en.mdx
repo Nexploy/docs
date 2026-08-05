@@ -1,0 +1,79 @@
+---
+title: Activity log
+description: Persistent audit trail of every action performed on the instance
+---
+
+Every action that changes the instance leaves a row in the database: who started it, on what, from which IP address, how long it took, and whether it succeeded, failed or was denied. Unlike [running actions](/en/features/tasks), which only live in memory, the activity log survives restarts.
+
+You read it from **Administration → Activity**.
+
+## What gets recorded
+
+| Source | Coverage |
+|---|---|
+| `SERVER_ACTION` | **Every** server action. Recording is wired into the action client itself — an action that exists is an action that is logged. |
+| `API_ROUTE` | API routes explicitly audited, and only for the `POST`, `PUT`, `PATCH` and `DELETE` methods. |
+
+Since every Docker mutation goes through a server action, they all show up; API routes serve reads, which are not logged.
+
+Three outcomes are distinguished:
+
+| Status | Meaning |
+|---|---|
+| `SUCCESS` | The action went through. |
+| `FAILURE` | The action failed: server error or rejected validation. |
+| `DENIED` | Permissions blocked the action. |
+
+A denied attempt is logged exactly like a successful one — which is the main point of an audit trail.
+
+<Callout>
+  If writing the log entry fails, the error goes to the server logs but the action itself is not interrupted. The log cannot take the instance down.
+</Callout>
+
+## Anatomy of an entry
+
+| Field | Content |
+|---|---|
+| `name` | The action name, for example `activity.purge`. The last dot splits it into resource and action, which is what makes the log filterable. |
+| Actor | Type (`USER`, `API_KEY`, `SYSTEM`), id, email, role and organization at the time of the action. |
+| Target | Type, id and name, derived from the action input — container id, volume name, domain, email… For an action covering several targets, the first one is kept, suffixed with how many others there were. |
+| Context | Docker environment, IP address (`x-forwarded-for`, else `x-real-ip`), user agent. |
+| Result | Duration in milliseconds and, on failure, the error message (truncated at 1,000 characters). |
+| `metadata` | The full action input, redacted. |
+
+The actor is stored as flat fields in addition to the relation to the user: deleting an account detaches the relation but leaves the recorded email and role behind, so the audit entry stays readable.
+
+## Secret redaction
+
+Metadata is never written raw. Any sensitive key — password, token, secret, API key, private key, certificate and TLS material, backup codes, `value` — is replaced with `[redacted]`, however deep it sits in the object.
+
+Size guards apply on top: a maximum depth of 6 levels, 25 items per array, 512 characters per string, and 8,000 characters for the serialised input, beyond which only a truncated preview is kept.
+
+## Reading the log
+
+The table is paginated server-side, 50 entries per page by default, sorted newest first. It sorts on date, name, actor, actor role, source, status and duration, and search covers the action name, the target name and id, the actor email and the error message. The underlying API additionally accepts filtering by name, resource, status, source, actor and date range.
+
+Clicking a row opens the entry detail, redacted metadata included.
+
+The page is wired to a dedicated SSE stream: new entries and purges are pushed live, with a heartbeat every 30 seconds.
+
+## Retention and purge
+
+Retention is set from **Administration → Settings**:
+
+- default: **90 days**, adjustable from 0 to 3,650;
+- **0 disables the purge** — entries are kept indefinitely;
+- an automatic purge runs **every day at 04:00 UTC** and deletes entries older than the retention;
+- a button triggers that same purge immediately.
+
+The date of the last purge and the number of entries it deleted are recorded and shown in the settings card.
+
+<Callout type="warn" title="A purge is final">
+  A purge is a database `DELETE`, with no recycle bin. If your compliance requires keeping the audit trail longer than the configured retention, export it first, or set retention to 0.
+</Callout>
+
+## Permissions
+
+The log is reserved for the **administrator** role: `activity.read` opens the page and the stream, `activity.manage` allows changing retention and triggering a purge. The `guest` and `developer` roles hold no permission on this resource, and the menu entry does not appear for them.
+
+Changing retention and purging are themselves logged actions.

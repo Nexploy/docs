@@ -1,0 +1,79 @@
+---
+title: Registro attività
+description: Traccia di audit persistente di ogni azione eseguita sull'istanza
+---
+
+Ogni azione che modifica l'istanza lascia una riga nel database: chi l'ha avviata, su cosa, da quale indirizzo IP, quanto è durata e se è riuscita, fallita o stata negata. A differenza delle [azioni in corso](/it/features/tasks), che vivono solo in memoria, il registro attività sopravvive ai riavvii.
+
+Si consulta da **Amministrazione → Attività**.
+
+## Cosa viene registrato
+
+| Sorgente | Copertura |
+|---|---|
+| `SERVER_ACTION` | **Tutte** le server action. La registrazione è integrata nel client di azione stesso: un'azione che esiste è un'azione registrata. |
+| `API_ROUTE` | Le route API esplicitamente sottoposte ad audit, e solo per i metodi `POST`, `PUT`, `PATCH` e `DELETE`. |
+
+Poiché tutte le mutazioni Docker passano da server action, compaiono tutte; le route API servono le letture, che non vengono registrate.
+
+Si distinguono tre esiti:
+
+| Stato | Significato |
+|---|---|
+| `SUCCESS` | L'azione è andata a termine. |
+| `FAILURE` | L'azione è fallita: errore del server o validazione rifiutata. |
+| `DENIED` | I permessi hanno bloccato l'azione. |
+
+Un tentativo negato viene registrato esattamente come uno riuscito: è il principale interesse di una traccia di audit.
+
+<Callout>
+  Se la scrittura della voce di registro fallisce, l'errore finisce nei log del server ma l'azione non viene interrotta. Il registro non può far cadere l'istanza.
+</Callout>
+
+## Anatomia di una voce
+
+| Campo | Contenuto |
+|---|---|
+| `name` | Nome dell'azione, per esempio `activity.purge`. L'ultimo punto lo divide in risorsa e azione, ed è ciò che rende il registro filtrabile. |
+| Attore | Tipo (`USER`, `API_KEY`, `SYSTEM`), identificativo, email, ruolo e organizzazione al momento dell'azione. |
+| Bersaglio | Tipo, identificativo e nome, dedotti dall'input dell'azione: id del contenitore, nome del volume, dominio, email… Per un'azione su più bersagli viene conservato il primo, con il numero dei restanti come suffisso. |
+| Contesto | Ambiente Docker, indirizzo IP (`x-forwarded-for`, altrimenti `x-real-ip`), user agent. |
+| Risultato | Durata in millisecondi e, in caso di fallimento, il messaggio di errore (troncato a 1.000 caratteri). |
+| `metadata` | L'input completo dell'azione, oscurato. |
+
+L'attore è salvato come campi piatti oltre alla relazione con l'utente: eliminare un account stacca la relazione ma lascia registrati email e ruolo, così la voce di audit resta leggibile.
+
+## Oscuramento dei segreti
+
+I metadati non vengono mai scritti grezzi. Qualsiasi chiave sensibile — password, token, segreto, chiave API, chiave privata, certificato e materiale TLS, codici di backup, `value` — è sostituita da `[redacted]`, a qualunque profondità si trovi nell'oggetto.
+
+Si applicano inoltre limiti di dimensione: profondità massima di 6 livelli, 25 elementi per array, 512 caratteri per stringa e 8.000 caratteri per l'input serializzato, oltre i quali resta solo un'anteprima troncata.
+
+## Consultare il registro
+
+La tabella è paginata lato server, 50 voci per pagina per impostazione predefinita, ordinata dalla più recente. Si ordina per data, nome, attore, ruolo dell'attore, sorgente, stato e durata, e la ricerca copre il nome dell'azione, il nome e l'identificativo del bersaglio, l'email dell'attore e il messaggio di errore. L'API sottostante accetta inoltre il filtro per nome, risorsa, stato, sorgente, attore e intervallo di date.
+
+Cliccando su una riga si apre il dettaglio della voce, metadati oscurati compresi.
+
+La pagina è collegata a un flusso SSE dedicato: nuove voci e purghe vengono inviate in diretta, con un heartbeat ogni 30 secondi.
+
+## Conservazione e purga
+
+La conservazione si imposta da **Amministrazione → Impostazioni**:
+
+- valore predefinito: **90 giorni**, regolabile da 0 a 3.650;
+- **0 disattiva la purga**: le voci vengono conservate a tempo indeterminato;
+- una purga automatica gira **ogni giorno alle 04:00 UTC** ed elimina le voci più vecchie della conservazione;
+- un pulsante avvia la stessa purga immediatamente.
+
+La data dell'ultima purga e il numero di voci eliminate vengono registrati e mostrati nella scheda delle impostazioni.
+
+<Callout type="warn" title="La purga è definitiva">
+  Una purga è un `DELETE` sul database, senza cestino. Se la tua conformità richiede di conservare la traccia di audit più a lungo della conservazione configurata, esportala prima, oppure imposta la conservazione a 0.
+</Callout>
+
+## Permessi
+
+Il registro è riservato al ruolo **amministratore**: `activity.read` apre la pagina e il flusso, `activity.manage` consente di cambiare la conservazione e avviare una purga. I ruoli `guest` e `developer` non hanno alcun permesso su questa risorsa, e la voce di menu non compare per loro.
+
+Cambiare la conservazione ed eseguire la purga sono a loro volta azioni registrate.

@@ -1,4 +1,9 @@
 {
   "title": "Sécurité",
-  "pages": ["authentication", "api-keys", "recovery-cli"]
+  "pages": [
+    "authentication",
+    "api-keys",
+    "activity-log",
+    "recovery-cli"
+  ]
 }

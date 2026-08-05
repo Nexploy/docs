@@ -3,6 +3,7 @@
   "pages": [
     "authentication",
     "api-keys",
+    "activity-log",
     "recovery-cli"
   ]
 }

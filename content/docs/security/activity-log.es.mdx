@@ -1,0 +1,79 @@
+---
+title: Registro de actividad
+description: Pista de auditoría persistente de cada acción realizada en la instancia
+---
+
+Cada acción que modifica la instancia deja una fila en la base de datos: quién la lanzó, sobre qué, desde qué dirección IP, cuánto tardó y si tuvo éxito, falló o fue denegada. A diferencia de las [acciones en curso](/es/features/tasks), que solo viven en memoria, el registro de actividad sobrevive a los reinicios.
+
+Se consulta desde **Administración → Actividad**.
+
+## Qué se registra
+
+| Fuente | Cobertura |
+|---|---|
+| `SERVER_ACTION` | **Todas** las server actions. El registro está integrado en el propio cliente de acciones: una acción que existe es una acción registrada. |
+| `API_ROUTE` | Las rutas API auditadas explícitamente, y solo para los métodos `POST`, `PUT`, `PATCH` y `DELETE`. |
+
+Como todas las mutaciones Docker pasan por server actions, todas aparecen; las rutas API sirven las lecturas, que no se registran.
+
+Se distinguen tres desenlaces:
+
+| Estado | Significado |
+|---|---|
+| `SUCCESS` | La acción llegó hasta el final. |
+| `FAILURE` | La acción falló: error de servidor o validación rechazada. |
+| `DENIED` | Los permisos bloquearon la acción. |
+
+Un intento denegado se registra igual que uno con éxito: ese es el principal interés de una pista de auditoría.
+
+<Callout>
+  Si la escritura del registro falla, el error va a los logs del servidor pero la acción no se interrumpe. El registro no puede tumbar la instancia.
+</Callout>
+
+## Anatomía de una entrada
+
+| Campo | Contenido |
+|---|---|
+| `name` | Nombre de la acción, por ejemplo `activity.purge`. El último punto lo divide en recurso y acción, que es lo que hace filtrable el registro. |
+| Actor | Tipo (`USER`, `API_KEY`, `SYSTEM`), identificador, correo, rol y organización en el momento de la acción. |
+| Objetivo | Tipo, identificador y nombre, deducidos de la entrada de la acción: identificador de contenedor, nombre de volumen, dominio, correo… Para una acción sobre varios objetivos se conserva el primero, con el número de los demás como sufijo. |
+| Contexto | Entorno Docker, dirección IP (`x-forwarded-for`, si no `x-real-ip`), user-agent. |
+| Resultado | Duración en milisegundos y, si falla, el mensaje de error (truncado a 1.000 caracteres). |
+| `metadata` | La entrada completa de la acción, depurada. |
+
+El actor se guarda como campos planos además de la relación con el usuario: borrar una cuenta desvincula la relación pero deja registrados el correo y el rol, así que la entrada de auditoría sigue siendo legible.
+
+## Depuración de secretos
+
+Los metadatos nunca se escriben en bruto. Cualquier clave sensible —contraseña, token, secreto, clave de API, clave privada, certificado y material TLS, códigos de respaldo, `value`— se sustituye por `[redacted]`, sin importar a qué profundidad del objeto esté.
+
+Además se aplican límites de tamaño: profundidad máxima de 6 niveles, 25 elementos por array, 512 caracteres por cadena y 8.000 caracteres para la entrada serializada, más allá de los cuales solo se conserva una vista previa truncada.
+
+## Consultar el registro
+
+La tabla se pagina en el servidor, 50 entradas por página por defecto, ordenada de más reciente a más antigua. Se puede ordenar por fecha, nombre, actor, rol del actor, fuente, estado y duración, y la búsqueda cubre el nombre de la acción, el nombre y el identificador del objetivo, el correo del actor y el mensaje de error. La API subyacente acepta además filtrar por nombre, recurso, estado, fuente, actor e intervalo de fechas.
+
+Al hacer clic en una fila se abre el detalle de la entrada, con los metadatos depurados incluidos.
+
+La página está conectada a un flujo SSE dedicado: las nuevas entradas y las purgas se envían en directo, con un latido cada 30 segundos.
+
+## Retención y purga
+
+La retención se configura desde **Administración → Ajustes**:
+
+- valor por defecto: **90 días**, ajustable de 0 a 3.650;
+- **0 desactiva la purga**: las entradas se conservan indefinidamente;
+- una purga automática se ejecuta **cada día a las 04:00 UTC** y borra las entradas más antiguas que la retención;
+- un botón lanza esa misma purga de inmediato.
+
+La fecha de la última purga y el número de entradas eliminadas se registran y se muestran en la tarjeta de ajustes.
+
+<Callout type="warn" title="La purga es definitiva">
+  Una purga es un `DELETE` en base de datos, sin papelera. Si tu cumplimiento normativo exige conservar la pista de auditoría más tiempo que la retención configurada, expórtala antes o pon la retención a 0.
+</Callout>
+
+## Permisos
+
+El registro está reservado al rol **administrador**: `activity.read` abre la página y el flujo, `activity.manage` permite cambiar la retención y lanzar una purga. Los roles `guest` y `developer` no tienen ningún permiso sobre este recurso, y la entrada de menú no les aparece.
+
+Cambiar la retención y purgar son, a su vez, acciones registradas.

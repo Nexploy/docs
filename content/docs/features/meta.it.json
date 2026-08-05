@@ -3,6 +3,7 @@
   "pages": [
     "git-integration",
     "monitoring",
+    "tasks",
     "registries",
     "backups",
     "cleanup",
