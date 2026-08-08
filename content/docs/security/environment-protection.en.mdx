@@ -1,0 +1,100 @@
+---
+title: Environment protection
+description: Block sensitive Docker actions on a given host
+---
+
+A **protected environment** refuses a list of actions you pick, everywhere in Nexploy: the UI, server actions, `docker-api` calls, build jobs and MCP tools. It is a guardrail placed on a Docker host (production, say), independent of roles.
+
+## Where to configure it
+
+**Administration → Environment protection** (`/admin/protection`). The page lists every active [environment](/en/core-concepts/environments), one panel per environment.
+
+| Action | Permission required |
+|---|---|
+| View the page | `environment:read` (`guest`, `developer`, `admin`) |
+| Change the rules | `environment:update` (`admin`) |
+
+A `developer` can therefore see the rules in force without being able to change them.
+
+## The two settings
+
+- **Protect** — turns protection on for this environment. While it is off, nothing is blocked, even if boxes stay checked.
+- **Allow administrators to bypass** — on by default. Accounts with the `admin` instance role can still run blocked actions. Turn it off to block **everyone**, admins included.
+
+Every change is saved immediately.
+
+## Blockable actions
+
+20 actions, in eight families:
+
+| Group | Action | What is blocked |
+|---|---|---|
+| Containers | Create a container | Creating new containers |
+| Containers | Start / stop / restart | `start`, `stop`, `pause`, `unpause`, `restart` |
+| Containers | Modify a container | Rename, recreate, image change, restart policy |
+| Containers | Delete a container | Deleting and pruning containers |
+| Containers | Terminal access | Terminal and `attach` sessions |
+| Containers | Incoming move | Moving a container **into** this environment |
+| Containers | Outgoing move | Moving a container **out of** this environment |
+| Images | Pull / import an image | `pull`, `load`, `import` |
+| Images | Manage images | `push`, `tag`, `untag` |
+| Images | Delete images | Deleting and pruning images |
+| Volumes | Create a volume | Creating volumes |
+| Volumes | Delete volumes | Deleting and pruning volumes |
+| Networks | Create a network | Creating networks |
+| Networks | Delete networks | Deleting and pruning networks |
+| Swarm | Manage the Swarm | `init`, `join`, `leave`, services and nodes |
+| Deployments | Deploy | Builds and version deployments targeting this environment |
+| Maintenance | Run cleanup | Manual Docker cleanups |
+| Environment | Modify the environment | Editing this environment and setting it as default |
+| Environment | Delete the environment | Deleting this environment |
+
+<Callout title="Reads are never blocked">
+  Listing, inspecting, following logs and stats always stay available.
+  Protection only covers actions that write.
+</Callout>
+
+## Presets
+
+Three presets check a selection in one click:
+
+| Preset | Contents |
+|---|---|
+| **Read only** | All 20 actions |
+| **Production** | Create / delete a container, terminal access, incoming and outgoing moves, delete images, delete volumes, delete networks, run cleanup, delete the environment |
+| **No data loss** | Delete a container, images, volumes, networks, run cleanup, delete the environment |
+
+A preset replaces the current selection; you can then adjust box by box.
+
+## Where the block applies
+
+The rule is checked in four places, so no path around it is left open:
+
+| Layer | Behaviour |
+|---|---|
+| UI | The button is disabled, with a tooltip naming the protected environment |
+| Server actions | 38 actions go through the protection middleware and fail with a `403` error and a toast |
+| `docker-api` | The matching REST routes answer `403` with the `ENVIRONMENT_PROTECTED` code — including terminal and `attach` WebSocket upgrades |
+| MCP tools / AI assistant | The tool returns an error instead of running |
+
+The UI disables buttons for convenience; the three server layers are what enforce the block, including for a direct API call with an [API key](/en/security/api-keys).
+
+## Moving a container between two hosts
+
+A move crosses two environments, so two rules are evaluated:
+
+- **Outgoing move** on the source environment,
+- **Incoming move** on the target environment.
+
+Either one being blocked fails the move.
+
+## What protection is not
+
+<Callout type="warn" title="Protection does not replace roles">
+  It stacks on top of permissions: a `developer` is still bound by their instance
+  role, and an action their role already forbids stays forbidden. Protection
+  exists to forbid an action to accounts that would otherwise be allowed to run
+  it.
+</Callout>
+
+The configuration is stored in the database and pushed to `docker-api` right after. If that sync fails, the change is rolled back and an error is shown — the two sides cannot drift apart.

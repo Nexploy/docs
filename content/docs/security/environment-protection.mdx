@@ -1,0 +1,100 @@
+---
+title: Protection des environnements
+description: Bloquer des actions Docker sensibles sur un hôte donné
+---
+
+Un **environnement protégé** refuse une liste d'actions que vous choisissez, partout dans Nexploy : interface, server actions, appels `docker-api`, jobs de build et outils MCP. C'est un garde-fou posé sur un hôte Docker (par ex. la production), indépendant des rôles.
+
+## Où la configurer
+
+**Administration → Protection des environnements** (`/admin/protection`). La page liste tous les [environnements](/core-concepts/environments) actifs, un panneau par environnement.
+
+| Action | Permission requise |
+|---|---|
+| Voir la page | `environment:read` (`guest`, `developer`, `admin`) |
+| Modifier les règles | `environment:update` (`admin`) |
+
+Un `developer` voit donc les règles en vigueur sans pouvoir les changer.
+
+## Les deux réglages
+
+- **Protéger** — active la protection sur cet environnement. Tant qu'elle est désactivée, aucune action n'est bloquée, même si des cases restent cochées.
+- **Autoriser les administrateurs à contourner** — activé par défaut. Les comptes de rôle d'instance `admin` peuvent toujours exécuter les actions bloquées. Désactivez-le pour bloquer **tout le monde**, admins compris.
+
+Chaque modification est enregistrée immédiatement.
+
+## Actions blocables
+
+20 actions, réparties en huit familles :
+
+| Groupe | Action | Ce qui est bloqué |
+|---|---|---|
+| Conteneurs | Créer un conteneur | Création de nouveaux conteneurs |
+| Conteneurs | Démarrer / arrêter / redémarrer | `start`, `stop`, `pause`, `unpause`, `restart` |
+| Conteneurs | Modifier un conteneur | Renommage, recréation, changement d'image, politique de redémarrage |
+| Conteneurs | Supprimer un conteneur | Suppression et `prune` de conteneurs |
+| Conteneurs | Accès terminal | Sessions terminal et `attach` |
+| Conteneurs | Déplacement entrant | Déplacer un conteneur **vers** cet environnement |
+| Conteneurs | Déplacement sortant | Déplacer un conteneur **hors** de cet environnement |
+| Images | Récupérer / importer une image | `pull`, `load`, `import` |
+| Images | Gérer les images | `push`, `tag`, `untag` |
+| Images | Supprimer des images | Suppression et `prune` d'images |
+| Volumes | Créer un volume | Création de volumes |
+| Volumes | Supprimer des volumes | Suppression et `prune` de volumes |
+| Réseaux | Créer un réseau | Création de réseaux |
+| Réseaux | Supprimer des réseaux | Suppression et `prune` de réseaux |
+| Swarm | Gérer le Swarm | `init`, `join`, `leave`, services et nœuds |
+| Déploiements | Déployer | Builds et déploiements de versions ciblant cet environnement |
+| Maintenance | Lancer le nettoyage | Nettoyages Docker manuels |
+| Environnement | Modifier l'environnement | Modification de cet environnement et définition par défaut |
+| Environnement | Supprimer l'environnement | Suppression de cet environnement |
+
+<Callout title="Les lectures ne sont jamais bloquées">
+  Lister, inspecter, suivre les logs et les statistiques restent toujours
+  disponibles. La protection ne couvre que les actions qui écrivent.
+</Callout>
+
+## Préréglages
+
+Trois préréglages cochent une sélection d'un coup :
+
+| Préréglage | Contenu |
+|---|---|
+| **Lecture seule** | Les 20 actions |
+| **Production** | Créer / supprimer un conteneur, accès terminal, déplacements entrant et sortant, supprimer des images, supprimer des volumes, supprimer des réseaux, lancer le nettoyage, supprimer l'environnement |
+| **Aucune perte de données** | Supprimer un conteneur, des images, des volumes, des réseaux, lancer le nettoyage, supprimer l'environnement |
+
+Un préréglage remplace la sélection courante ; vous pouvez ensuite ajuster case par case.
+
+## Où le blocage s'applique
+
+La règle est vérifiée à quatre endroits, pour qu'aucun chemin d'accès ne la contourne :
+
+| Couche | Comportement |
+|---|---|
+| Interface | Le bouton est désactivé, avec une infobulle indiquant l'environnement protégé |
+| Server actions | 38 actions passent par le middleware de protection et échouent avec une erreur `403` et un toast |
+| `docker-api` | Les routes REST correspondantes répondent `403` avec le code `ENVIRONMENT_PROTECTED` — y compris l'ouverture des WebSockets terminal et `attach` |
+| Outils MCP / assistant IA | L'outil renvoie une erreur au lieu de s'exécuter |
+
+L'interface désactive les boutons par confort ; ce sont les trois couches serveur qui garantissent le blocage, y compris pour un appel API direct avec une [clé API](/security/api-keys).
+
+## Déplacer un conteneur entre deux hôtes
+
+Un déplacement traverse deux environnements, donc deux règles sont évaluées :
+
+- **Déplacement sortant** sur l'environnement source,
+- **Déplacement entrant** sur l'environnement cible.
+
+Il suffit que l'une des deux soit bloquée pour que le déplacement échoue.
+
+## Ce que la protection n'est pas
+
+<Callout type="warn" title="La protection ne remplace pas les rôles">
+  Elle s'ajoute aux permissions : un `developer` reste limité par son rôle
+  d'instance, et une action déjà interdite par son rôle le reste. La protection
+  sert à interdire une action à des comptes qui, autrement, auraient le droit de
+  la faire.
+</Callout>
+
+La configuration est stockée en base et poussée à `docker-api` dans la foulée. Si cette synchronisation échoue, la modification est annulée et une erreur s'affiche — les deux côtés ne peuvent pas diverger.

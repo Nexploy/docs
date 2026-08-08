@@ -29,6 +29,10 @@ Only `nexploy-cli` (the recovery tool, separate from the application) persists a
 | `TRAEFIK_STATIC_CONFIG_PATH` | Where to write `traefik.yml` on first boot if it doesn't exist (optional — only enables rendering on `install.sh` installs) |
 | `TRAEFIK_USE_TLS` | `false` to render `traefik.yml` without HTTPS/ACME (IP mode, no domain) — defaults to `true` |
 | `ACME_EMAIL` | Let's Encrypt email used to render `traefik.yml` when `TRAEFIK_USE_TLS` isn't `false` |
+| `DOCKER_SOCKET` | Path to the machine's Docker socket, used as the default *Socket path* for new environments and by `pnpm db:seed` for the local environment. Exposed to the browser as `NEXT_PUBLIC_DOCKER_SOCKET` by `next.config.ts`. Default `/var/run/docker.sock` — Colima: `~/.colima/default/docker.sock`, Docker Desktop macOS: `~/.docker/run/docker.sock` |
+| `TRAEFIK_TEMPLATES_DIR` | Directory of the Traefik templates used to render `traefik.yml` (optional — default `<cwd>/traefik-templates`) |
+| `HEAP_SOFT_LIMIT_MB` | Heap threshold in MB above which the server triggers a manual GC (optional — default `3200`) |
+| `MAX_TURBOPACK_CACHE_GB` | Max Turbopack cache size in GB, cleared on boot above it (development only — default `3`) |
 | `LOG_LEVEL` | Log level (e.g. `info`) |
 | `NODE_ENV` | Runtime mode — set to `production` by `install.sh` |
 
@@ -39,7 +43,7 @@ Only `nexploy-cli` (the recovery tool, separate from the application) persists a
 | `PORT` | Listening port (default `3300`) |
 | `NODE_ENV` | Runtime mode — set to `production` by `install.sh` |
 | `LOG_LEVEL` | Log level |
-| `DOCKER_SOCKET` | Path to the Docker socket (default `/var/run/docker.sock`) |
+| `DOCKER_SOCKET` | Path to the Docker socket to drive (default `/var/run/docker.sock`). On Colima or Docker Desktop macOS, point it at the real socket (`~/.colima/default/docker.sock`, `~/.docker/run/docker.sock`) |
 | `NEXPLOY_API_URL` | URL of the nexploy app, to call it back |
 | `NEXPLOY_API_KEY` | Shared secret expected by `docker-api` — same value as `NEXPLOY_API_KEY` on the nexploy side. If unset, `docker-api` fetches it automatically on boot via `GET /api/internal/docker-api-key` (authenticated with `ENCRYPTION_KEY`) — this is what the Docker images do, don't set it manually there |
 | `ENCRYPTION_KEY` | Same value as on the `apps/nexploy/.env` side — used to authenticate the automatic `NEXPLOY_API_KEY` fetch |
@@ -47,6 +51,15 @@ Only `nexploy-cli` (the recovery tool, separate from the application) persists a
 | `TRAEFIK_NETWORK_NAME` | Docker network Traefik watches (default `nexploy_traefik_network`) |
 | `NEXPLOY_APP_CONTAINER_NAME` | Name of the `nexploy_app` container (default `nexploy_app`) — used to recreate it on a domain/IP switch from Admin → Settings |
 | `TRAEFIK_STATIC_CONFIG_PATH` | Path to `traefik.yml`, removed then awaited again after a `nexploy_app` container recreation (optional) |
+| `DOCKER_API_CONTAINER_NAME` | Name of the `docker-api` container (default `nexploy_docker_api`) — used during instance upgrades |
+| `UPGRADER_CONTAINER_NAME` | Name of the throwaway container that runs the instance upgrade (default `nexploy_upgrader`) |
+| `NEXPLOY_APP_NETWORK_ALIAS` | Network alias of the app container recreated during an upgrade (default `nexploy`) |
+| `DOCKER_API_NETWORK_ALIAS` | Network alias of the `docker-api` container recreated during an upgrade (default `docker-api`) |
+| `NEXPLOY_IMAGE_REPOSITORY` | Image repository pulled for the app during an upgrade (default `nexploy/nexploy`) |
+| `DOCKER_API_IMAGE_REPOSITORY` | Image repository pulled for `docker-api` during an upgrade (default `nexploy/docker-api`) |
+| `NEXPLOY_GITHUB_REPO` | GitHub repository polled to detect new releases (default `Nexploy/nexploy`) |
+
+`SELF_UPGRADE_TARGET_IMAGE`, `SELF_UPGRADE_CONTAINER_NAME`, `SELF_UPGRADE_APP_TARGET_IMAGE` and `SELF_UPGRADE_APP_CONTAINER_NAME` are not configured by hand: `docker-api` injects them itself into the `nexploy_upgrader` container it creates to upgrade itself, and that container reads them back on boot.
 
 ## `nexploy_postgres` container
 

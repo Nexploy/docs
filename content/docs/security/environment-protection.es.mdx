@@ -1,0 +1,99 @@
+---
+title: Protección de entornos
+description: Bloquear acciones Docker sensibles en un host concreto
+---
+
+Un **entorno protegido** rechaza una lista de acciones que tú eliges, en todo Nexploy: interfaz, server actions, llamadas a `docker-api`, jobs de build y herramientas MCP. Es una barrera colocada sobre un host Docker (por ejemplo, producción), independiente de los roles.
+
+## Dónde configurarlo
+
+**Administración → Protección de entornos** (`/admin/protection`). La página lista todos los [entornos](/es/core-concepts/environments) activos, un panel por entorno.
+
+| Acción | Permiso requerido |
+|---|---|
+| Ver la página | `environment:read` (`guest`, `developer`, `admin`) |
+| Cambiar las reglas | `environment:update` (`admin`) |
+
+Un `developer` ve así las reglas vigentes sin poder modificarlas.
+
+## Los dos ajustes
+
+- **Proteger** — activa la protección en este entorno. Mientras esté desactivada no se bloquea nada, aunque queden casillas marcadas.
+- **Permitir que los administradores lo omitan** — activado por defecto. Las cuentas con rol de instancia `admin` siguen pudiendo ejecutar las acciones bloqueadas. Desactívalo para bloquear a **todo el mundo**, administradores incluidos.
+
+Cada cambio se guarda de inmediato.
+
+## Acciones bloqueables
+
+20 acciones, repartidas en ocho familias:
+
+| Grupo | Acción | Qué se bloquea |
+|---|---|---|
+| Contenedores | Crear un contenedor | Creación de nuevos contenedores |
+| Contenedores | Iniciar / detener / reiniciar | `start`, `stop`, `pause`, `unpause`, `restart` |
+| Contenedores | Modificar un contenedor | Renombrar, recrear, cambiar la imagen, política de reinicio |
+| Contenedores | Eliminar un contenedor | Eliminación y `prune` de contenedores |
+| Contenedores | Acceso a terminal | Sesiones de terminal y `attach` |
+| Contenedores | Movimiento entrante | Mover un contenedor **hacia** este entorno |
+| Contenedores | Movimiento saliente | Mover un contenedor **fuera de** este entorno |
+| Imágenes | Descargar / importar una imagen | `pull`, `load`, `import` |
+| Imágenes | Gestionar imágenes | `push`, `tag`, `untag` |
+| Imágenes | Eliminar imágenes | Eliminación y `prune` de imágenes |
+| Volúmenes | Crear un volumen | Creación de volúmenes |
+| Volúmenes | Eliminar volúmenes | Eliminación y `prune` de volúmenes |
+| Redes | Crear una red | Creación de redes |
+| Redes | Eliminar redes | Eliminación y `prune` de redes |
+| Swarm | Gestionar el Swarm | `init`, `join`, `leave`, servicios y nodos |
+| Despliegues | Desplegar | Builds y despliegues de versiones dirigidos a este entorno |
+| Mantenimiento | Ejecutar la limpieza | Limpiezas Docker manuales |
+| Entorno | Modificar el entorno | Modificación de este entorno y definirlo como predeterminado |
+| Entorno | Eliminar el entorno | Eliminación de este entorno |
+
+<Callout title="Las lecturas nunca se bloquean">
+  Listar, inspeccionar, seguir los logs y las estadísticas siguen siempre
+  disponibles. La protección solo cubre las acciones que escriben.
+</Callout>
+
+## Preajustes
+
+Tres preajustes marcan una selección de una vez:
+
+| Preajuste | Contenido |
+|---|---|
+| **Solo lectura** | Las 20 acciones |
+| **Producción** | Crear / eliminar un contenedor, acceso a terminal, movimientos entrante y saliente, eliminar imágenes, eliminar volúmenes, eliminar redes, ejecutar la limpieza, eliminar el entorno |
+| **Sin pérdida de datos** | Eliminar un contenedor, imágenes, volúmenes, redes, ejecutar la limpieza, eliminar el entorno |
+
+Un preajuste sustituye la selección actual; después puedes ajustar casilla por casilla.
+
+## Dónde se aplica el bloqueo
+
+La regla se verifica en cuatro sitios, para que ninguna vía de acceso la esquive:
+
+| Capa | Comportamiento |
+|---|---|
+| Interfaz | El botón se desactiva, con un tooltip que indica el entorno protegido |
+| Server actions | 38 acciones pasan por el middleware de protección y fallan con un error `403` y un toast |
+| `docker-api` | Las rutas REST correspondientes responden `403` con el código `ENVIRONMENT_PROTECTED` — incluida la apertura de los WebSockets de terminal y `attach` |
+| Herramientas MCP / asistente IA | La herramienta devuelve un error en lugar de ejecutarse |
+
+La interfaz desactiva los botones por comodidad; son las tres capas de servidor las que garantizan el bloqueo, también para una llamada directa a la API con una [clave API](/es/security/api-keys).
+
+## Mover un contenedor entre dos hosts
+
+Un movimiento atraviesa dos entornos, así que se evalúan dos reglas:
+
+- **Movimiento saliente** en el entorno de origen,
+- **Movimiento entrante** en el entorno de destino.
+
+Basta con que una de las dos esté bloqueada para que el movimiento falle.
+
+## Lo que la protección no es
+
+<Callout type="warn" title="La protección no sustituye a los roles">
+  Se suma a los permisos: un `developer` sigue limitado por su rol de instancia, y
+  una acción que su rol ya prohíbe sigue prohibida. La protección existe para
+  prohibir una acción a cuentas que, de otro modo, tendrían derecho a ejecutarla.
+</Callout>
+
+La configuración se guarda en la base de datos y se envía a `docker-api` justo después. Si esa sincronización falla, el cambio se revierte y se muestra un error — los dos lados no pueden divergir.
