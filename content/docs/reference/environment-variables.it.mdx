@@ -29,6 +29,10 @@ Soltanto `nexploy-cli` (lo strumento di recovery, distinto dall'applicazione) pe
 | `TRAEFIK_STATIC_CONFIG_PATH` | Percorso in cui scrivere `traefik.yml` al primo avvio se assente (facoltativo — abilita il rendering solo sulle installazioni tramite `install.sh`) |
 | `TRAEFIK_USE_TLS` | `false` per renderizzare `traefik.yml` senza HTTPS/ACME (modalità IP senza dominio) — predefinito `true` |
 | `ACME_EMAIL` | Email Let's Encrypt usata per renderizzare `traefik.yml` quando `TRAEFIK_USE_TLS` non è `false` |
+| `DOCKER_SOCKET` | Percorso del socket Docker della macchina, usato come valore predefinito del campo *Socket path* degli ambienti e da `pnpm db:seed` per l'ambiente locale. Esposto al browser come `NEXT_PUBLIC_DOCKER_SOCKET` da `next.config.ts`. Predefinito `/var/run/docker.sock` — Colima: `~/.colima/default/docker.sock`, Docker Desktop macOS: `~/.docker/run/docker.sock` |
+| `TRAEFIK_TEMPLATES_DIR` | Directory dei template Traefik usati per renderizzare `traefik.yml` (facoltativo — predefinito `<cwd>/traefik-templates`) |
+| `HEAP_SOFT_LIMIT_MB` | Soglia di heap in MB oltre la quale il server esegue un GC manuale (facoltativo — predefinito `3200`) |
+| `MAX_TURBOPACK_CACHE_GB` | Dimensione massima della cache Turbopack in GB, svuotata all'avvio oltre tale soglia (solo sviluppo — predefinito `3`) |
 | `LOG_LEVEL` | Livello di log (es. `info`) |
 | `NODE_ENV` | Modalità di esecuzione — impostata a `production` da `install.sh` |
 
@@ -39,7 +43,7 @@ Soltanto `nexploy-cli` (lo strumento di recovery, distinto dall'applicazione) pe
 | `PORT` | Porta di ascolto (predefinita `3300`) |
 | `NODE_ENV` | Modalità di esecuzione — impostata a `production` da `install.sh` |
 | `LOG_LEVEL` | Livello di log |
-| `DOCKER_SOCKET` | Percorso del socket Docker (predefinito `/var/run/docker.sock`) |
+| `DOCKER_SOCKET` | Percorso del socket Docker da pilotare (predefinito `/var/run/docker.sock`). Su Colima o Docker Desktop macOS, puntalo al socket reale (`~/.colima/default/docker.sock`, `~/.docker/run/docker.sock`) |
 | `NEXPLOY_API_URL` | URL dell'app nexploy, per richiamare l'app |
 | `NEXPLOY_API_KEY` | Secret condiviso atteso da `docker-api` — stesso valore di `NEXPLOY_API_KEY` lato nexploy. Se assente, `docker-api` lo recupera automaticamente all'avvio tramite `GET /api/internal/docker-api-key` (autenticato da `ENCRYPTION_KEY`) — è ciò che fanno le immagini Docker, in tal caso non impostarlo manualmente |
 | `ENCRYPTION_KEY` | Stesso valore del lato `apps/nexploy/.env` — usato per autenticare il recupero automatico di `NEXPLOY_API_KEY` |
@@ -47,6 +51,15 @@ Soltanto `nexploy-cli` (lo strumento di recovery, distinto dall'applicazione) pe
 | `TRAEFIK_NETWORK_NAME` | Rete Docker che Traefik sorveglia (predefinita `nexploy_traefik_network`) |
 | `NEXPLOY_APP_CONTAINER_NAME` | Nome del container `nexploy_app` (predefinito `nexploy_app`) — usato per ricrearlo in caso di cambio di dominio/IP da Admin → Impostazioni |
 | `TRAEFIK_STATIC_CONFIG_PATH` | Percorso di `traefik.yml`, eliminato e poi atteso di nuovo dopo una ricreazione del container `nexploy_app` (facoltativo) |
+| `DOCKER_API_CONTAINER_NAME` | Nome del container `docker-api` (predefinito `nexploy_docker_api`) — usato durante gli aggiornamenti dell'istanza |
+| `UPGRADER_CONTAINER_NAME` | Nome del container temporaneo che esegue l'aggiornamento dell'istanza (predefinito `nexploy_upgrader`) |
+| `NEXPLOY_APP_NETWORK_ALIAS` | Alias di rete del container dell'app ricreato durante un aggiornamento (predefinito `nexploy`) |
+| `DOCKER_API_NETWORK_ALIAS` | Alias di rete del container `docker-api` ricreato durante un aggiornamento (predefinito `docker-api`) |
+| `NEXPLOY_IMAGE_REPOSITORY` | Repository di immagini scaricato per l'app durante un aggiornamento (predefinito `nexploy/nexploy`) |
+| `DOCKER_API_IMAGE_REPOSITORY` | Repository di immagini scaricato per `docker-api` durante un aggiornamento (predefinito `nexploy/docker-api`) |
+| `NEXPLOY_GITHUB_REPO` | Repository GitHub interrogato per rilevare le nuove versioni (predefinito `Nexploy/nexploy`) |
+
+Le variabili `SELF_UPGRADE_TARGET_IMAGE`, `SELF_UPGRADE_CONTAINER_NAME`, `SELF_UPGRADE_APP_TARGET_IMAGE` e `SELF_UPGRADE_APP_CONTAINER_NAME` non si configurano a mano: `docker-api` le inietta da sé nel container `nexploy_upgrader` che crea per aggiornarsi, e quel container le rilegge all'avvio.
 
 ## Container `nexploy_postgres`
 
