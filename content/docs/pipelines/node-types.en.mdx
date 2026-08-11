@@ -72,6 +72,13 @@ Builds a Docker image from a Dockerfile. **Use only for a Dockerfile-only deploy
 - **Configuration**: `dockerfilePath`, `dockerfileFilePath` (optional file path if different), `imageName`.
 - **Inputs**: `workDir`.
 - **Outputs**: `imageId`, `imageName`.
+- **Build server**: with an upstream `set-runner`, the clone, the build and the push happen on the runner; `imageName` becomes the reference pushed to the registry.
+
+### `set-runner`
+Sends the build work of every downstream node to a remote build server instead of the Nexploy host. The runner must be registered in **Administration → Servers** — see [Build servers](/en/features/build-runners).
+- **Configuration**: `runnerId`, `runnerName`, `registryId` (registry to push the built image to), `fallbackToLocal` (if the runner is offline, build on the Nexploy server — on by default).
+- **Outputs**: `runnerId`, `runnerName`, `runnerRegistryId`, `runnerFallback`.
+- **Nodes affected**: `build-docker-image`, `compose-build`, `deploy-compose`. With no registry selected, the image stays on the build machine and cannot be deployed elsewhere.
 
 ## Docker registries
 
@@ -92,13 +99,15 @@ Pulls an image from Docker Hub or a private registry, without going through a bu
 Builds only the images of a `docker-compose` stack, without starting any container. Useful to separate build from start, or to chain a `compose-run` test step before deploying.
 - **Configuration**: `composeFileName` (default `docker-compose.yml`), `composeFilePath` (optional relative folder), `noCache` (rebuild without Docker cache).
 - **Inputs**: `workDir` (required).
-- **Outputs**: `projectName`, `composeFile`, `services`, `builtServices`, `composeConfig`.
+- **Outputs**: `projectName`, `composeFile`, `services`, `builtServices`, `composeConfig`, `pushedImages`, `runnerId`.
+- **Build server**: with an upstream `set-runner`, only the services declaring a `build:` section go to the runner; those that only reference a public `image:` keep being pulled from their public repository. The compose file is rewritten with the pushed images.
 
 ### `deploy-compose`
 Deploys a `docker-compose` stack (runs `docker compose build` then `up -d` internally — no separate `build-docker-image` needed). Repository environment variables are injected automatically, merged with any received from an upstream node (`set-env-vars`, `fetch-secrets-*`), which take priority on duplicate keys.
 - **Configuration**: `composeFileName` (default `docker-compose.yml`), `composeFilePath` (optional relative folder), `noCache` (rebuild without Docker cache).
 - **Inputs**: `workDir` (required, must come from an upstream clone node).
 - **Outputs**: `projectName`, `containers`, `composeConfig`. Supports an optional `save-version` attach node on its bottom handle.
+- **Build server**: with an upstream `set-runner`, the services declaring a `build:` section are built and pushed by the runner before deployment, while those that only reference a public `image:` keep being pulled from their public repository. This node builds and deploys: no separate `compose-build` is needed to use a runner.
 - **Security**: variables are written to a temporary `.env` file just before `up` (never present during `build`), and a `.dockerignore` excluding `.env`/`.env.*` is guaranteed on the build context.
 
 ### `compose-up`
@@ -334,7 +343,7 @@ Restores a folder previously cached by `cache-save`, before a build.
 
 ### `add-domain`
 Adds a custom domain and a Traefik routing rule for a container.
-- **Configuration**: `host`, `path` / `internalPath` (path rewriting), `stripPath`, `containerName`, `containerPort` (default 3000), `https` (requires `certificateId` in that case), Cloudflare options (`cloudflareCredentialId`, `cloudflareZoneId`, `cloudflareZoneName`) for automatic DNS management.
+- **Configuration**: `host`, `path` / `internalPath` (path rewriting), `stripPath`, `containerName`, `containerPort` (default 3000), `https` (requires `certificateId` in that case), DNS options (`dnsCredentialId`, `dnsZoneId`, `dnsZoneName`) for automatic DNS management at the connected provider — see [DNS](/en/networking/dns). The equivalent `cloudflare*` fields are still read for older pipelines.
 - **Outputs**: `host`, `containerPort`, `domainId`, `environmentId`.
 
 ### `remove-domain`

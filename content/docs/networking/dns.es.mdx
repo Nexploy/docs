@@ -1,0 +1,70 @@
+---
+title: DNS
+description: Gestionar automáticamente los registros DNS de tus dominios
+---
+
+Nexploy crea y actualiza por sí mismo el registro DNS de un dominio. Conectas una cuenta en tu proveedor de DNS, eliges la zona al añadir el dominio, y el registro `A` se crea, se mueve o se borra junto con el dominio.
+
+## Proveedores admitidos
+
+| Proveedor | Credenciales pedidas | Proxy | Estado |
+| --- | --- | --- | --- |
+| Cloudflare | `apiToken` | sí | estable |
+| Hetzner DNS | `apiToken` | no | experimental |
+| DigitalOcean | `apiToken` | no | experimental |
+| Vultr | `apiToken` | no | experimental |
+| Linode | `apiToken` | no | experimental |
+| Porkbun | `apiKey`, `secretApiKey` | no | experimental |
+| PowerDNS | `baseUrl`, `apiKey`, `serverId` (opcional, por defecto `localhost`) | no | experimental |
+| OVH | `applicationKey`, `applicationSecret`, `consumerKey`, `endpoint` (opcional, por defecto `https://eu.api.ovh.com/1.0`) | no | experimental |
+
+Todos manejan zonas wildcard. Solo Cloudflare sabe poner el registro tras su proxy: Nexploy lo activa ahí y no lo pide en ningún otro sitio.
+
+<Callout title="Experimental">
+Los siete proveedores marcados como experimentales funcionan de principio a fin — conexión, listado de zonas, creación, actualización y borrado de registros — pero tienen menos kilómetros que Cloudflare. Informa de cualquier comportamiento inesperado en vez de sortearlo.
+</Callout>
+
+## Conectar una cuenta
+
+Desde **Administración → Integraciones → Cloud & Infrastructure**, añade una cuenta DNS: elige el proveedor, dale un nombre visible e introduce sus credenciales.
+
+Al guardar, Nexploy:
+
+1. llama al proveedor para **verificar las credenciales** — una cuenta nunca se guarda sin una ida y vuelta con éxito;
+2. **cifra** las credenciales (AES-256-GCM, como las variables de entorno) antes de escribirlas en la base de datos;
+3. **detecta la IP pública** del servidor y la guarda con la cuenta. Esa dirección es a la que apuntarán los registros `A`.
+
+Una cuenta DNS pertenece al usuario que la conectó: cada uno ve solo las suyas. El recurso `dns` exige `manage` para conectar o borrar una cuenta (rol **admin**) y `read` para usarla en un formulario de dominio (rol **developer**).
+
+## Lo que Nexploy escribe en la zona
+
+Un solo tipo de registro: un **`A`** que apunta a la IP pública capturada al conectar la cuenta.
+
+| Proveedor | TTL aplicado |
+| --- | --- |
+| Cloudflare | automático (`1`) |
+| DigitalOcean, Hetzner, OVH, PowerDNS | 60 s |
+| Vultr | 120 s |
+| Linode | 300 s |
+| Porkbun | 600 s (mínimo impuesto por la API) |
+
+El subdominio se deduce del host y de la zona: `app.example.com` en la zona `example.com` da el registro `app`, y un dominio igual a la zona da el registro raíz.
+
+## Ciclo de vida con el dominio
+
+El registro sigue al dominio, sin que tengas que hacer nada:
+
+- **Dominio creado** con una zona elegida → el registro se crea y su identificador queda guardado en el dominio.
+- **Zona cambiada** → el registro antiguo se borra y se crea uno nuevo en la nueva zona.
+- **Host cambiado** → el registro existente se actualiza.
+- **Zona quitada** del dominio → el registro se borra y el dominio vuelve a ser manual.
+
+Un dominio sin zona elegida no se toca nunca: Nexploy pone la ruta de Traefik y tú dejas el DNS en manos de quien quieras.
+
+## En un pipeline
+
+El nodo `add-domain` acepta los mismos campos: `dnsCredentialId`, `dnsZoneId` y `dnsZoneName`. Rellenados, el dominio creado por el pipeline aprovisiona su registro igual que desde la interfaz. Ver [Tipos de nodos](/es/pipelines/node-types).
+
+<Callout type="warn" title="Campos heredados de Cloudflare">
+Los antiguos campos `cloudflareCredentialId`, `cloudflareZoneId` y `cloudflareZoneName` se siguen leyendo, para que los pipelines y los dominios creados antes del soporte multiproveedor sigan funcionando. Los registros nuevos usan los campos `dns*`; considera los de Cloudflare como obsoletos.
+</Callout>

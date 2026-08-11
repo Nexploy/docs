@@ -72,6 +72,13 @@ Costruisce un'immagine Docker a partire da un Dockerfile. **Da usare unicamente 
 - **Configurazione**: `dockerfilePath`, `dockerfileFilePath` (percorso del file facoltativo se diverso), `imageName`.
 - **Ingressi**: `workDir`.
 - **Uscite**: `imageId`, `imageName`.
+- **Server di build**: con un `set-runner` a monte, clone, build e push avvengono sul runner; `imageName` diventa il riferimento spinto verso il registry.
+
+### `set-runner`
+Invia il lavoro di build di tutti i nodi a valle a un server di build remoto invece che all'host Nexploy. Il runner deve essere registrato in **Amministrazione → Server** — vedi [Server di build](/it/features/build-runners).
+- **Configurazione**: `runnerId`, `runnerName`, `registryId` (registry verso cui spingere l'immagine costruita), `fallbackToLocal` (se il runner è offline, costruire sul server Nexploy — attivo per impostazione predefinita).
+- **Uscite**: `runnerId`, `runnerName`, `runnerRegistryId`, `runnerFallback`.
+- **Nodi interessati**: `build-docker-image`, `compose-build`, `deploy-compose`. Senza registry scelto, l'immagine resta sulla macchina di build e non può essere distribuita altrove.
 
 ## Registry Docker
 
@@ -92,13 +99,15 @@ Recupera un'immagine da Docker Hub o da un registry privato, senza passare da un
 Costruisce unicamente le immagini di uno stack `docker-compose`, senza avviare i container. Utile per separare la costruzione dall'avvio, o per concatenare un `compose-run` di test prima di distribuire.
 - **Configurazione**: `composeFileName` (predefinito `docker-compose.yml`), `composeFilePath` (cartella relativa facoltativa), `noCache` (rebuild senza cache Docker).
 - **Ingressi**: `workDir` (obbligatorio).
-- **Uscite**: `projectName`, `composeFile`, `services`, `builtServices`, `composeConfig`.
+- **Uscite**: `projectName`, `composeFile`, `services`, `builtServices`, `composeConfig`, `pushedImages`, `runnerId`.
+- **Server di build**: con un `set-runner` a monte, solo i servizi che dichiarano una sezione `build:` vanno al runner; quelli che referenziano solo una `image:` pubblica continuano a essere scaricati dal loro repository pubblico. Il file compose viene riscritto con le immagini spinte.
 
 ### `deploy-compose`
 Distribuisce uno stack `docker-compose` (esegue `docker compose build` poi `up -d` internamente — non serve un `build-docker-image` separato). Le variabili d'ambiente del repository sono iniettate automaticamente, fuse con quelle ricevute da un nodo a monte (`set-env-vars`, `fetch-secrets-*`) che hanno la priorità in caso di chiave duplicata.
 - **Configurazione**: `composeFileName` (predefinito `docker-compose.yml`), `composeFilePath` (cartella relativa facoltativa), `noCache` (rebuild senza cache Docker).
 - **Ingressi**: `workDir` (obbligatorio, deve provenire da un nodo di clonazione a monte).
 - **Uscite**: `projectName`, `containers`, `composeConfig`. Supporta un nodo di aggancio facoltativo `save-version` sul suo handle inferiore.
+- **Server di build**: con un `set-runner` a monte, i servizi che dichiarano una sezione `build:` vengono costruiti e spinti dal runner prima del deployment, mentre quelli che referenziano solo una `image:` pubblica continuano a essere scaricati dal loro repository pubblico. Questo nodo costruisce e distribuisce: non serve un `compose-build` separato per usare un runner.
 - **Sicurezza**: le variabili sono scritte in un file `.env` temporaneo poco prima dell'`up` (mai presente durante il `build`), ed è garantito un `.dockerignore` che esclude `.env`/`.env.*` sul contesto di build.
 
 ### `compose-up`
@@ -334,7 +343,7 @@ Ripristina una cartella precedentemente messa in cache da `cache-save`, prima di
 
 ### `add-domain`
 Aggiunge un dominio personalizzato e una regola di routing Traefik per un container.
-- **Configurazione**: `host`, `path` / `internalPath` (riscrittura del percorso), `stripPath`, `containerName`, `containerPort` (predefinito 3000), `https` (richiede allora `certificateId`), opzioni Cloudflare (`cloudflareCredentialId`, `cloudflareZoneId`, `cloudflareZoneName`) per la gestione DNS automatica.
+- **Configurazione**: `host`, `path` / `internalPath` (riscrittura del percorso), `stripPath`, `containerName`, `containerPort` (predefinito 3000), `https` (richiede allora `certificateId`), opzioni DNS (`dnsCredentialId`, `dnsZoneId`, `dnsZoneName`) per la gestione DNS automatica presso il provider collegato — vedi [DNS](/it/networking/dns). I campi `cloudflare*` equivalenti restano letti per le pipeline più vecchie.
 - **Uscite**: `host`, `containerPort`, `domainId`, `environmentId`.
 
 ### `remove-domain`

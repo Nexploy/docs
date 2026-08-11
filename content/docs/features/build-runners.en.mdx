@@ -1,0 +1,133 @@
+---
+title: Build servers
+description: Move Docker builds onto a dedicated machine
+---
+
+A **build server** (build runner) is a remote machine that clones the repository, builds the Docker image and pushes it to a registry, instead of the Nexploy host. The production host only does a `docker pull`: it stays responsive for the whole build.
+
+<Callout title="The principle">
+The runner calls Nexploy, never the other way around. It opens an outbound WebSocket connection to your server and waits for jobs. No inbound port to open, no Docker socket exposed on the network: the runner works behind NAT or a home router.
+</Callout>
+
+## Register a runner
+
+Build servers are managed in **Administration → Servers**. The `buildRunner` resource (`create`, `read`, `update`, `delete`) is granted to the **admin** role only: an organization member does not see this page.
+
+| Field | Description |
+| --- | --- |
+| `name` | Unique name, shown in the `set-runner` node and in build logs. |
+| `description` | Free text. |
+| `labels` | Free labels (for example `arm64`, `gpu`) to tell your machines apart. |
+| `maxConcurrency` | Number of simultaneous builds accepted. Default `2`. |
+| `enabled` | A disabled runner is refused at connection and at dispatch. |
+
+On creation Nexploy generates a **token** shaped as `nxr_` followed by 64 hexadecimal characters. It is shown **once only**: the database stores its SHA-256 hash and an 8-character prefix to identify it in the UI. If you lose it, regenerate it — the runner drops back to `OFFLINE` and must be restarted with the new token.
+
+## Install the runner
+
+The runner ships as a Docker image. One machine, one container, one mounted Docker socket.
+
+```bash
+docker run -d \
+  --name nexploy-build-runner \
+  --restart unless-stopped \
+  -e NEXPLOY_URL=https://nexploy.example.com \
+  -e NEXPLOY_RUNNER_TOKEN=nxr_xxxxxxxxxxxxxxxxxxxxx \
+  -e NEXPLOY_RUNNER_NAME=build-runner-1 \
+  -e NEXPLOY_RUNNER_CONCURRENCY=2 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v nexploy-runner-workspace:/workspace \
+  nexploy/build-runner:latest
+```
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `NEXPLOY_URL` | *required* | Base URL of the Nexploy server. A path prefix is preserved. |
+| `NEXPLOY_RUNNER_TOKEN` | *required* | Token issued by Nexploy (16 characters minimum). |
+| `NEXPLOY_RUNNER_NAME` | hostname | Name displayed in the UI. |
+| `NEXPLOY_RUNNER_LABELS` | *empty* | Comma-separated labels. |
+| `NEXPLOY_RUNNER_CONCURRENCY` | `2` | Simultaneous builds. Beyond that, jobs are rejected and Nexploy knows it. |
+| `NEXPLOY_RUNNER_WORK_DIR` | `/workspace` | Where clones live, removed after each build. |
+| `NEXPLOY_RUNNER_JOB_TIMEOUT_MS` | `3600000` | Ceiling per job. Nexploy may send a shorter timeout. |
+| `NEXPLOY_RUNNER_KEEP_WORKDIR` | `false` | Keep the clone after the build. Debugging only: it holds the sources and the `.env`. |
+| `NEXPLOY_RUNNER_PRUNE_AFTER_BUILD` | `true` | Prune dangling images after each build. |
+| `NEXPLOY_RUNNER_ALLOW_INSECURE` | `false` | Allow a plain-HTTP `NEXPLOY_URL` to a remote host. |
+| `NEXPLOY_RUNNER_TLS_REJECT_UNAUTHORIZED` | `true` | Set to `false` only behind a private certificate authority. |
+| `NEXPLOY_RUNNER_HEALTH_PORT` | `9090` | Health port. `0` disables it. |
+| `DOCKER_SOCKET_PATH` | `/var/run/docker.sock` | Docker socket used for builds. |
+| `DOCKER_HOST` | *unset* | TCP daemon instead of the socket. |
+| `LOG_LEVEL` | `info` | `fatal`, `error`, `warn`, `info`, `debug`, `trace`. |
+
+Two HTTP probes are exposed: `GET /healthz` (the process is alive) and `GET /readyz` (`200` once registered with Nexploy, `503` while reconnecting).
+
+## Use it in a pipeline
+
+The `set-runner` node moves the build work of **every downstream node** onto the chosen runner.
+
+- **Configuration**: `runnerId`, `runnerName`, `registryId` (the registry to push to), `fallbackToLocal` (on by default).
+- **Outputs**: `runnerId`, `runnerName`, `runnerRegistryId`, `runnerFallback`.
+
+Place it right after the clone node, before the build node:
+
+```
+clone-repository → set-runner → deploy-compose → save-version
+```
+
+Three nodes know how to read an upstream runner:
+
+| Node | Behaviour with a runner |
+| --- | --- |
+| `build-docker-image` | The image is built and pushed by the runner; the `imageName` output becomes the pushed reference. |
+| `compose-build` | Every service declaring a `build:` section is built on the runner; the compose file is rewritten with the pushed images. |
+| `deploy-compose` | Same, then the stack is deployed on the target host, which pulls the images. |
+
+For a compose stack, services that only declare a public `image:` are **not** sent to the runner: they keep being pulled from their public repository at deploy time. Only the services you build go through the registry.
+
+If the runner is unreachable, disabled or offline at execution time, `fallbackToLocal` decides: on, the build falls back to the Nexploy server with a warning in the logs; off, the build fails.
+
+## A registry is mandatory
+
+The built image lives on the runner, not on the deployment host. The registry is the bridge: the runner pushes, the target host pulls.
+
+<Callout type="warn" title="Without a registry">
+If no registry is selected in `set-runner`, the node says so in the logs and the image stays on the build machine. That configuration only makes sense when the runner **is** the deployment host.
+</Callout>
+
+Configure the registry in **Docker → Registries** — see [Docker registries](/en/features/registries), which also creates a local one in a single click. The registry must be reachable **from both machines**: declare it with a routable address (`192.168.1.10:5000`), never `localhost`, or the deployment host will look for a registry on itself.
+
+## Job lifecycle
+
+1. **Clone** — shallow clone of the branch, optional commit checkout and submodules. Git credentials come from Nexploy per job and are never written to disk; if the token expired mid-flight the runner asks for a fresh one and retries once.
+2. **Build** — `docker build` on the local daemon, with the build args, labels, `target`, platform and cache sources sent by Nexploy. The context's `.dockerignore` is honoured.
+3. **Push** — tag and push to the selected registry, the digest is reported back.
+4. **Cleanup** — workspace removed, local copy of the pushed image removed, dangling images pruned.
+
+Every log line streams back in near real time and shows up in the usual build log. Cancelling a build in Nexploy aborts the clone, the build and the push on the runner.
+
+## Protocol and states
+
+The connection uses the `/api/ws/runner` path and the `x-nexploy-runner-protocol` header; the current protocol version is `1`. Frames are JSON, capped at 1 MiB.
+
+| Direction | Messages |
+| --- | --- |
+| Runner → Nexploy | `hello`, `heartbeat`, `pong`, `job.accept`, `job.reject`, `job.progress`, `job.log`, `job.result`, `credentials.request` |
+| Nexploy → Runner | `hello.ack`, `job.dispatch`, `job.cancel`, `credentials.response`, `ping`, `error` |
+
+The phases reported by `job.progress` are `queued`, `cloning`, `building`, `pushing`, `cleanup`.
+
+A runner carries three states in the UI:
+
+| State | Meaning |
+| --- | --- |
+| `ONLINE` | Connected, heartbeat received less than 90 seconds ago. |
+| `DRAINING` | Shutting down: no job accepted any more, in-flight builds finish (up to 5 minutes). |
+| `OFFLINE` | Disconnected, or silent for more than 90 seconds. |
+
+A job not accepted within 30 seconds is considered lost; with no timeout imposed by the node, the ceiling per job is one hour. Messages produced during a network cut are buffered and replayed on reconnect: a brief incident does not lose a build result.
+
+## Security
+
+- **The token is a server access secret.** It is shown only at creation, stored as SHA-256, and compared in constant time. Regenerate it if the build machine changes hands.
+- **The Docker socket is root-equivalent** on the build machine. Keep runners on machines dedicated to building, not on the ones hosting your production.
+- **Git and registry credentials cross the connection.** Use `https://` for `NEXPLOY_URL` as soon as the runner is not on the same machine — that is the default, `NEXPLOY_RUNNER_ALLOW_INSECURE` must be turned on explicitly to bypass it.
+- **Disk goes fast.** Clones, layer cache and pushed images all live on the build machine: give `/workspace` and `/var/lib/docker` room, and leave `NEXPLOY_RUNNER_PRUNE_AFTER_BUILD` on.
