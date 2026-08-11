@@ -5,6 +5,7 @@
     "monitoring",
     "tasks",
     "registries",
+    "build-runners",
     "backups",
     "cleanup",
     "ai-assistant",

@@ -3,4 +3,26 @@ title: Docker registries
 description: Configure private Docker registries
 ---
 
-Configure **private Docker registries** to push and pull your images. Registries are used by the `push-to-registry` and `pull-from-registry` nodes in your pipelines.
+Configure **private Docker registries** to push and pull your images. Registries are used by the `push-to-registry` and `pull-from-registry` nodes in your pipelines, and by [build servers](/en/features/build-runners) to hand the built image over to the deployment host.
+
+A registry is declared with a URL (`registry.example.com`, `192.168.1.10:5000`), and optionally a username and password. The `https://` scheme and any trailing slash are stripped on save.
+
+## Create a local registry
+
+From **Docker → Registries**, one button creates a local registry in a single step: Nexploy starts a container from the official `registry:3` image on the current Docker environment, then registers it as a registry usable in pipelines.
+
+| Field | Purpose |
+| --- | --- |
+| `name` | Name shown in the registry list. |
+| `containerName` | Name of the created container. Default `nexploy-registry`. |
+| `host` | Address other machines will use to reach the registry. |
+| `port` | Port published on the host, mapped to the container's `5000`. Default `5000`. |
+| `dataPath` | Absolute path on the host, mounted on `/var/lib/registry`. Default `/var/lib/nexploy/registry`. |
+
+The container is created with `restart: unless-stopped` and `REGISTRY_STORAGE_DELETE_ENABLED=true`, and the registry is saved as `host:port`. The `host` field is left empty when you browse Nexploy from `localhost`: fill it with the machine's routable address, never `localhost`, or other hosts will look for a registry on themselves.
+
+The action requires the `registry.create` and `container.manage` permissions, and honours the current Docker environment's protection like any other container creation.
+
+<Callout type="warn" title="The local registry is plain HTTP">
+`registry:3` started this way serves no TLS. Every Docker daemon that pushes to it or pulls from it must list it in its `insecure-registries` — the build machine's **and** the deployment host's. Without that, the daemon fails with `http: server gave HTTP response to HTTPS client`.
+</Callout>

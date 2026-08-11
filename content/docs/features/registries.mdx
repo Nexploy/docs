@@ -3,4 +3,26 @@ title: Registres Docker
 description: Configurer des registres Docker privés
 ---
 
-Configurez des **registres Docker privés** pour pousser et récupérer vos images. Les registres sont utilisés par les nœuds `push-to-registry` et `pull-from-registry` dans vos pipelines.
+Configurez des **registres Docker privés** pour pousser et récupérer vos images. Les registres sont utilisés par les nœuds `push-to-registry` et `pull-from-registry` dans vos pipelines, et par les [serveurs de build](/features/build-runners) pour livrer l'image construite à l'hôte de déploiement.
+
+Un registre se déclare avec une URL (`registry.example.com`, `192.168.1.10:5000`), et éventuellement un identifiant et un mot de passe. Le schéma `https://` et la barre oblique finale sont retirés à l'enregistrement.
+
+## Créer un registre local
+
+Depuis **Docker → Registres**, un bouton crée un registre local en une fois : Nexploy démarre un conteneur à partir de l'image officielle `registry:3` sur l'environnement Docker courant, puis l'enregistre comme registre utilisable dans les pipelines.
+
+| Champ | Rôle |
+| --- | --- |
+| `name` | Nom affiché dans la liste des registres. |
+| `containerName` | Nom du conteneur créé. Défaut `nexploy-registry`. |
+| `host` | Adresse par laquelle les autres machines joindront le registre. |
+| `port` | Port publié sur l'hôte, mappé sur le `5000` du conteneur. Défaut `5000`. |
+| `dataPath` | Chemin absolu sur l'hôte, monté sur `/var/lib/registry`. Défaut `/var/lib/nexploy/registry`. |
+
+Le conteneur est créé avec `restart: unless-stopped` et `REGISTRY_STORAGE_DELETE_ENABLED=true`, et le registre est enregistré sous `host:port`. Le champ `host` est laissé vide quand vous consultez Nexploy depuis `localhost` : renseignez-y l'adresse routable de la machine, jamais `localhost`, sinon les autres hôtes chercheront un registre sur eux-mêmes.
+
+L'action demande les permissions `registry.create` et `container.manage`, et respecte la protection de l'environnement Docker courant comme n'importe quelle création de conteneur.
+
+<Callout type="warn" title="Le registre local est en HTTP">
+`registry:3` démarré ainsi ne sert pas de TLS. Tout démon Docker qui pousse ou tire depuis lui doit le déclarer dans ses `insecure-registries` — celui de la machine de build **et** celui de l'hôte de déploiement. Sans ça, le démon échoue avec `http: server gave HTTP response to HTTPS client`.
+</Callout>

@@ -3,4 +3,26 @@ title: Registry Docker
 description: Configurare registry Docker privati
 ---
 
-Configura **registry Docker privati** per pubblicare e recuperare le tue immagini. I registry sono usati dai nodi `push-to-registry` e `pull-from-registry` nelle tue pipeline.
+Configura **registry Docker privati** per pubblicare e recuperare le tue immagini. I registry sono usati dai nodi `push-to-registry` e `pull-from-registry` nelle tue pipeline, e dai [server di build](/it/features/build-runners) per consegnare l'immagine costruita all'host di deploy.
+
+Un registry si dichiara con una URL (`registry.example.com`, `192.168.1.10:5000`) ed eventualmente un nome utente e una password. Lo schema `https://` e la barra finale vengono rimossi al salvataggio.
+
+## Creare un registry locale
+
+Da **Docker → Registry**, un pulsante crea un registry locale in una sola volta: Nexploy avvia un container a partire dall'immagine ufficiale `registry:3` sull'ambiente Docker corrente, poi lo registra come registry utilizzabile nelle pipeline.
+
+| Campo | Ruolo |
+| --- | --- |
+| `name` | Nome mostrato nell'elenco dei registry. |
+| `containerName` | Nome del container creato. Predefinito `nexploy-registry`. |
+| `host` | Indirizzo con cui le altre macchine raggiungeranno il registry. |
+| `port` | Porta pubblicata sull'host, mappata sulla `5000` del container. Predefinita `5000`. |
+| `dataPath` | Percorso assoluto sull'host, montato su `/var/lib/registry`. Predefinito `/var/lib/nexploy/registry`. |
+
+Il container è creato con `restart: unless-stopped` e `REGISTRY_STORAGE_DELETE_ENABLED=true`, e il registry è salvato come `host:port`. Il campo `host` resta vuoto quando consulti Nexploy da `localhost`: inseriscici l'indirizzo instradabile della macchina, mai `localhost`, altrimenti gli altri host cercheranno un registry su sé stessi.
+
+L'azione richiede i permessi `registry.create` e `container.manage`, e rispetta la protezione dell'ambiente Docker corrente come qualsiasi altra creazione di container.
+
+<Callout type="warn" title="Il registry locale è in HTTP">
+`registry:3` avviato così non serve TLS. Ogni daemon Docker che vi spinge o vi scarica deve dichiararlo nei propri `insecure-registries` — quello della macchina di build **e** quello dell'host di deploy. Senza, il daemon fallisce con `http: server gave HTTP response to HTTPS client`.
+</Callout>
