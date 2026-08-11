@@ -1,6 +1,70 @@
 ---
-title: DNS Cloudflare
-description: Gérer automatiquement les enregistrements DNS via Cloudflare
+title: DNS
+description: Gérer automatiquement les enregistrements DNS de vos domaines
 ---
 
-Nexploy s'intègre à l'API Cloudflare pour gérer automatiquement les enregistrements DNS de vos domaines.
+Nexploy crée et met à jour lui-même l'enregistrement DNS d'un domaine. Vous connectez un compte chez votre fournisseur DNS, vous choisissez la zone au moment d'ajouter le domaine, et l'enregistrement `A` est créé, déplacé ou supprimé en même temps que le domaine.
+
+## Fournisseurs pris en charge
+
+| Fournisseur | Identifiants demandés | Proxy | Statut |
+| --- | --- | --- | --- |
+| Cloudflare | `apiToken` | oui | stable |
+| Hetzner DNS | `apiToken` | non | expérimental |
+| DigitalOcean | `apiToken` | non | expérimental |
+| Vultr | `apiToken` | non | expérimental |
+| Linode | `apiToken` | non | expérimental |
+| Porkbun | `apiKey`, `secretApiKey` | non | expérimental |
+| PowerDNS | `baseUrl`, `apiKey`, `serverId` (optionnel, défaut `localhost`) | non | expérimental |
+| OVH | `applicationKey`, `applicationSecret`, `consumerKey`, `endpoint` (optionnel, défaut `https://eu.api.ovh.com/1.0`) | non | expérimental |
+
+Tous gèrent les zones wildcard. Seul Cloudflare sait mettre l'enregistrement derrière son proxy : Nexploy l'active automatiquement chez lui, et ne le demande pas aux autres.
+
+<Callout title="Expérimental">
+Les sept fournisseurs marqués expérimentaux fonctionnent de bout en bout — connexion, liste des zones, création, mise à jour et suppression d'enregistrement — mais ont moins de kilomètres au compteur que Cloudflare. Signalez tout comportement inattendu plutôt que de le contourner.
+</Callout>
+
+## Connecter un compte
+
+Depuis **Administration → Intégrations → Cloud & Infrastructure**, ajoutez un compte DNS : choisissez le fournisseur, donnez-lui un nom d'affichage et saisissez ses identifiants.
+
+À l'enregistrement, Nexploy :
+
+1. appelle le fournisseur pour **vérifier les identifiants** — un compte n'est jamais enregistré sans un aller-retour réussi ;
+2. **chiffre** les identifiants (AES-256-GCM, comme les variables d'environnement) avant de les écrire en base ;
+3. **détecte l'IP publique** du serveur et la stocke avec le compte. C'est cette adresse qui servira de contenu aux enregistrements `A`.
+
+Un compte DNS appartient à l'utilisateur qui l'a connecté : chacun ne voit que les siens. La ressource `dns` demande `manage` pour connecter ou supprimer un compte (rôle **admin**) et `read` pour l'utiliser dans un formulaire de domaine (rôle **developer**).
+
+## Ce que Nexploy écrit dans la zone
+
+Un seul type d'enregistrement : un **`A`** pointant vers l'IP publique captée à la connexion du compte.
+
+| Fournisseur | TTL posé |
+| --- | --- |
+| Cloudflare | automatique (`1`) |
+| DigitalOcean, Hetzner, OVH, PowerDNS | 60 s |
+| Vultr | 120 s |
+| Linode | 300 s |
+| Porkbun | 600 s (minimum imposé par l'API) |
+
+Le sous-domaine est déduit de l'hôte et de la zone : `app.example.com` dans la zone `example.com` donne l'enregistrement `app`, et un domaine égal à la zone donne l'enregistrement racine.
+
+## Cycle de vie avec le domaine
+
+L'enregistrement suit le domaine, sans action de votre part :
+
+- **Domaine créé** avec une zone choisie → l'enregistrement est créé et son identifiant est conservé sur le domaine.
+- **Zone changée** → l'ancien enregistrement est supprimé, un nouveau est créé dans la nouvelle zone.
+- **Hôte changé** → l'enregistrement existant est mis à jour.
+- **Zone retirée** du domaine → l'enregistrement est supprimé et le domaine redevient manuel.
+
+Un domaine sans zone choisie n'est jamais touché : Nexploy pose la route Traefik et vous laissez le DNS à qui vous voulez.
+
+## Dans un pipeline
+
+Le nœud `add-domain` accepte les mêmes champs : `dnsCredentialId`, `dnsZoneId` et `dnsZoneName`. Renseignés, le domaine créé par le pipeline provisionne son enregistrement comme depuis l'interface. Voir [Types de nœuds](/pipelines/node-types).
+
+<Callout type="warn" title="Champs Cloudflare hérités">
+Les anciens champs `cloudflareCredentialId`, `cloudflareZoneId` et `cloudflareZoneName` sont encore lus, pour que les pipelines et les domaines créés avant la prise en charge multi-fournisseurs continuent de fonctionner. Les nouveaux enregistrements utilisent les champs `dns*` ; considérez les champs Cloudflare comme dépréciés.
+</Callout>

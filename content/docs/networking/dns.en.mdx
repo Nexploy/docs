@@ -1,6 +1,70 @@
 ---
-title: Cloudflare DNS
-description: Automatically manage DNS records via Cloudflare
+title: DNS
+description: Automatically manage your domains' DNS records
 ---
 
-Nexploy integrates with the Cloudflare API to automatically manage the DNS records of your domains.
+Nexploy creates and updates a domain's DNS record itself. You connect an account at your DNS provider, you pick the zone when adding the domain, and the `A` record is created, moved or deleted along with the domain.
+
+## Supported providers
+
+| Provider | Credentials asked | Proxy | Status |
+| --- | --- | --- | --- |
+| Cloudflare | `apiToken` | yes | stable |
+| Hetzner DNS | `apiToken` | no | experimental |
+| DigitalOcean | `apiToken` | no | experimental |
+| Vultr | `apiToken` | no | experimental |
+| Linode | `apiToken` | no | experimental |
+| Porkbun | `apiKey`, `secretApiKey` | no | experimental |
+| PowerDNS | `baseUrl`, `apiKey`, `serverId` (optional, default `localhost`) | no | experimental |
+| OVH | `applicationKey`, `applicationSecret`, `consumerKey`, `endpoint` (optional, default `https://eu.api.ovh.com/1.0`) | no | experimental |
+
+All of them handle wildcard zones. Only Cloudflare can put the record behind its proxy: Nexploy turns that on there, and does not ask for it anywhere else.
+
+<Callout title="Experimental">
+The seven providers marked experimental work end to end — connection, zone listing, record create, update and delete — but have fewer miles on them than Cloudflare. Report anything unexpected instead of working around it.
+</Callout>
+
+## Connect an account
+
+From **Administration → Integrations → Cloud & Infrastructure**, add a DNS account: pick the provider, give it a display name and enter its credentials.
+
+On save, Nexploy:
+
+1. calls the provider to **verify the credentials** — an account is never stored without a successful round trip;
+2. **encrypts** the credentials (AES-256-GCM, like environment variables) before writing them to the database;
+3. **detects the server's public IP** and stores it with the account. That address is what `A` records will point to.
+
+A DNS account belongs to the user who connected it: everyone sees only their own. The `dns` resource requires `manage` to connect or delete an account (**admin** role) and `read` to use it in a domain form (**developer** role).
+
+## What Nexploy writes into the zone
+
+One record type: an **`A`** record pointing at the public IP captured when the account was connected.
+
+| Provider | TTL set |
+| --- | --- |
+| Cloudflare | automatic (`1`) |
+| DigitalOcean, Hetzner, OVH, PowerDNS | 60 s |
+| Vultr | 120 s |
+| Linode | 300 s |
+| Porkbun | 600 s (API minimum) |
+
+The subdomain is derived from the host and the zone: `app.example.com` in the `example.com` zone gives the `app` record, and a domain equal to the zone gives the root record.
+
+## Lifecycle with the domain
+
+The record follows the domain, with nothing to do on your side:
+
+- **Domain created** with a zone selected → the record is created and its id is kept on the domain.
+- **Zone changed** → the old record is deleted, a new one is created in the new zone.
+- **Host changed** → the existing record is updated.
+- **Zone removed** from the domain → the record is deleted and the domain goes back to manual.
+
+A domain with no zone selected is never touched: Nexploy sets up the Traefik route and you leave DNS to whoever you like.
+
+## In a pipeline
+
+The `add-domain` node takes the same fields: `dnsCredentialId`, `dnsZoneId` and `dnsZoneName`. Filled in, the domain created by the pipeline provisions its record exactly as it does from the UI. See [Node types](/en/pipelines/node-types).
+
+<Callout type="warn" title="Legacy Cloudflare fields">
+The old `cloudflareCredentialId`, `cloudflareZoneId` and `cloudflareZoneName` fields are still read, so pipelines and domains created before multi-provider support keep working. New records use the `dns*` fields; treat the Cloudflare ones as deprecated.
+</Callout>

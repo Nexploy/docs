@@ -1,6 +1,70 @@
 ---
-title: DNS Cloudflare
-description: Gestire automaticamente i record DNS tramite Cloudflare
+title: DNS
+description: Gestire automaticamente i record DNS dei tuoi domini
 ---
 
-Nexploy si integra con l'API Cloudflare per gestire automaticamente i record DNS dei tuoi domini.
+Nexploy crea e aggiorna da sé il record DNS di un dominio. Colleghi un account presso il tuo provider DNS, scegli la zona quando aggiungi il dominio, e il record `A` viene creato, spostato o eliminato insieme al dominio.
+
+## Provider supportati
+
+| Provider | Credenziali richieste | Proxy | Stato |
+| --- | --- | --- | --- |
+| Cloudflare | `apiToken` | sì | stabile |
+| Hetzner DNS | `apiToken` | no | sperimentale |
+| DigitalOcean | `apiToken` | no | sperimentale |
+| Vultr | `apiToken` | no | sperimentale |
+| Linode | `apiToken` | no | sperimentale |
+| Porkbun | `apiKey`, `secretApiKey` | no | sperimentale |
+| PowerDNS | `baseUrl`, `apiKey`, `serverId` (facoltativo, predefinito `localhost`) | no | sperimentale |
+| OVH | `applicationKey`, `applicationSecret`, `consumerKey`, `endpoint` (facoltativo, predefinito `https://eu.api.ovh.com/1.0`) | no | sperimentale |
+
+Tutti gestiscono le zone wildcard. Solo Cloudflare sa mettere il record dietro il proprio proxy: Nexploy lo attiva lì e non lo chiede altrove.
+
+<Callout title="Sperimentale">
+I sette provider marcati come sperimentali funzionano dall'inizio alla fine — connessione, elenco delle zone, creazione, aggiornamento ed eliminazione dei record — ma hanno meno chilometri di Cloudflare. Segnala qualunque comportamento inatteso invece di aggirarlo.
+</Callout>
+
+## Collegare un account
+
+Da **Amministrazione → Integrazioni → Cloud & Infrastructure**, aggiungi un account DNS: scegli il provider, dagli un nome visualizzato e inserisci le sue credenziali.
+
+Al salvataggio, Nexploy:
+
+1. chiama il provider per **verificare le credenziali** — un account non viene mai salvato senza un giro di andata e ritorno riuscito;
+2. **cifra** le credenziali (AES-256-GCM, come le variabili d'ambiente) prima di scriverle nel database;
+3. **rileva l'IP pubblico** del server e lo conserva con l'account. È quell'indirizzo che i record `A` punteranno.
+
+Un account DNS appartiene all'utente che l'ha collegato: ognuno vede solo i propri. La risorsa `dns` richiede `manage` per collegare o eliminare un account (ruolo **admin**) e `read` per usarlo in un modulo di dominio (ruolo **developer**).
+
+## Cosa scrive Nexploy nella zona
+
+Un solo tipo di record: un **`A`** che punta all'IP pubblico catturato al collegamento dell'account.
+
+| Provider | TTL impostato |
+| --- | --- |
+| Cloudflare | automatico (`1`) |
+| DigitalOcean, Hetzner, OVH, PowerDNS | 60 s |
+| Vultr | 120 s |
+| Linode | 300 s |
+| Porkbun | 600 s (minimo imposto dall'API) |
+
+Il sottodominio si deduce dall'host e dalla zona: `app.example.com` nella zona `example.com` dà il record `app`, e un dominio uguale alla zona dà il record radice.
+
+## Ciclo di vita con il dominio
+
+Il record segue il dominio, senza che tu faccia nulla:
+
+- **Dominio creato** con una zona scelta → il record viene creato e il suo identificatore resta sul dominio.
+- **Zona cambiata** → il vecchio record viene eliminato, uno nuovo viene creato nella nuova zona.
+- **Host cambiato** → il record esistente viene aggiornato.
+- **Zona rimossa** dal dominio → il record viene eliminato e il dominio torna manuale.
+
+Un dominio senza zona scelta non viene mai toccato: Nexploy imposta la rotta Traefik e tu lasci il DNS a chi preferisci.
+
+## In una pipeline
+
+Il nodo `add-domain` accetta gli stessi campi: `dnsCredentialId`, `dnsZoneId` e `dnsZoneName`. Compilati, il dominio creato dalla pipeline effettua il provisioning del proprio record esattamente come dall'interfaccia. Vedi [Tipi di nodi](/it/pipelines/node-types).
+
+<Callout type="warn" title="Campi Cloudflare ereditati">
+I vecchi campi `cloudflareCredentialId`, `cloudflareZoneId` e `cloudflareZoneName` vengono ancora letti, così pipeline e domini creati prima del supporto multi-provider continuano a funzionare. I nuovi record usano i campi `dns*`; considera quelli Cloudflare deprecati.
+</Callout>
