@@ -20,7 +20,7 @@ description: Variables de entorno principales y primer arranque
 
 <Callout>La lista completa está disponible en `apps/nexploy/.env.example` y `apps/docker-api/.env.example`.</Callout>
 
-En producción, el instalador (`install.sh`) genera automáticamente todos estos secretos y los pasa directamente a cada contenedor al arrancar (`docker inspect nexploy_app` para consultarlos) — no se escribe nada en un archivo del host. Única excepción: `NEXPLOY_API_KEY`, generada en la base de datos en el primer arranque, que `nexploy_app` deja en un archivo del volumen compartido para que `docker-api` la lea (`NEXPLOY_API_KEY_FILE`). En desarrollo, `BETTER_AUTH_SECRET` y `ENCRYPTION_KEY` deben generarse manualmente, mientras que `NEXPLOY_API_KEY` la produce `pnpm --filter=nexploy db:seed` — consulta [Instalación](/es/getting-started/installation) para los detalles.
+En producción, el instalador (`install.sh`) genera automáticamente todos estos secretos y los pasa directamente a cada contenedor al arrancar (`docker inspect nexploy_app` para consultarlos) — no se escribe nada en un archivo del host. En desarrollo, `BETTER_AUTH_SECRET` y `ENCRYPTION_KEY` deben generarse manualmente, mientras que `NEXPLOY_API_KEY` la produce `pnpm --filter=nexploy db:seed` — consulta [Instalación](/es/getting-started/installation) para los detalles.
 
 ## Primer arranque
 

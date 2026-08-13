@@ -5,7 +5,7 @@ description: Referencia de las variables de entorno de Nexploy
 
 En producción mediante el instalador (`install.sh`), todas estas variables se generan automáticamente y se pasan directamente a cada contenedor al arrancar — ninguna se escribe en un archivo del host (consultables mediante `docker inspect nexploy_app` / `docker inspect nexploy_docker_api`). En desarrollo se configuran en `apps/nexploy/.env` y `apps/docker-api/.env` (ver [Instalación](/es/getting-started/installation)).
 
-Dos excepciones. `nexploy-cli` (la herramienta de recuperación, distinta de la aplicación) persiste el hash de su recovery key en `/etc/nexploy/cli.env` — ver [CLI de recuperación](/es/security/recovery-cli). Y la clave API interna transita por un archivo del volumen `nexploy_deployer_workdir`, compartido entre `nexploy_app` y `nexploy_docker_api`: ver `NEXPLOY_API_KEY_FILE` más abajo.
+Solo `nexploy-cli` (la herramienta de recuperación, distinta de la aplicación) persiste un dato en el host, en `/etc/nexploy/cli.env`: el hash de su recovery key — ver [CLI de recuperación](/es/security/recovery-cli).
 
 ## `apps/nexploy/.env`
 
@@ -20,7 +20,6 @@ Dos excepciones. `nexploy-cli` (la herramienta de recuperación, distinta de la 
 | `ENCRYPTION_KEY` | Secreto del que deriva (scrypt) la clave AES-256-GCM de cifrado de las variables de entorno — sin valor por defecto, generar con `openssl rand -hex 32` |
 | `DOCKER_API_URL` | URL del servicio `docker-api` |
 | `NEXPLOY_API_KEY` | Clave enviada en `Authorization: Bearer` a `docker-api` para autenticarse — generada por `pnpm db:seed`, mismo valor que `NEXPLOY_API_KEY` del lado de docker-api |
-| `NEXPLOY_API_KEY_FILE` | Archivo donde el seed escribe esa clave al arrancar; el entrypoint la relee y la exporta, y luego el archivo se conserva para `docker-api` (por defecto `/tmp/deployer/.nexploy-api-key`) |
 | `INNGEST_BASE_URL` | URL del servidor Inngest autoalojado (el SDK le envía los eventos / sincroniza las funciones) |
 | `INNGEST_EVENT_KEY` | Clave de evento de Inngest |
 | `INNGEST_SIGNING_KEY` | Clave de firma de Inngest (verifica las peticiones entre la app y el servidor Inngest) |
@@ -48,17 +47,14 @@ Dos excepciones. `nexploy-cli` (la herramienta de recuperación, distinta de la 
 | `LOG_LEVEL` | Nivel de log |
 | `DOCKER_SOCKET` | Ruta del socket Docker a pilotar (por defecto `/var/run/docker.sock`). En Colima o Docker Desktop macOS, apúntala al socket real (`~/.colima/default/docker.sock`, `~/.docker/run/docker.sock`) |
 | `NEXPLOY_API_URL` | URL de la app nexploy, para volver a llamar a la app |
-| `NEXPLOY_API_KEY` | Clave enviada a la app nexploy para autenticarse (carga de los entornos, sincronización de las eliminaciones) — mismo valor que `NEXPLOY_API_KEY` del lado de nexploy. Si falta, `docker-api` lee el archivo `NEXPLOY_API_KEY_FILE`: es lo que hacen las imágenes Docker, en ese caso no la fijes manualmente |
-| `NEXPLOY_API_KEY_FILE` | Archivo del que leer la clave cuando `NEXPLOY_API_KEY` no está definida (por defecto `/tmp/deployer/.nexploy-api-key`). Lo escribe `nexploy_app` en el volumen `nexploy_deployer_workdir`, montado por ambos contenedores; se relee cuando su contenido cambia, lo que cubre una rotación de clave |
-| `ENCRYPTION_KEY` | Mismo valor que del lado de `apps/nexploy/.env` — enviado como `x-internal-secret` para que nexploy verifique las claves API recibidas |
+| `NEXPLOY_API_KEY` | Clave enviada a la app nexploy para autenticarse (carga de los entornos, sincronización de las eliminaciones) — mismo valor que `NEXPLOY_API_KEY` del lado de nexploy. Si falta, `docker-api` la recupera en su primera llamada mediante `GET /api/internal/docker-api-key` (autenticado por `ENCRYPTION_KEY`) y la conserva en memoria — es lo que hacen las imágenes Docker, en ese caso no la fijes manualmente |
+| `ENCRYPTION_KEY` | Mismo valor que del lado de `apps/nexploy/.env` — enviado como `x-internal-secret` para recuperar `NEXPLOY_API_KEY` y para que nexploy verifique las claves API recibidas |
 | `TRAEFIK_CONTAINER_NAME` | Nombre del contenedor Traefik a pilotar (por defecto `nexploy_traefik`) |
 | `TRAEFIK_NETWORK_NAME` | Red Docker que Traefik vigila (por defecto `nexploy_traefik_network`) |
 | `NEXPLOY_APP_CONTAINER_NAME` | Nombre del contenedor `nexploy_app` (por defecto `nexploy_app`) — usado para recrearlo al cambiar de dominio/IP desde Admin → Ajustes |
 | `TRAEFIK_STATIC_CONFIG_PATH` | Ruta de `traefik.yml`, eliminado y luego esperado de nuevo tras una recreación del contenedor `nexploy_app` (opcional) |
 | `DOCKER_API_CONTAINER_NAME` | Nombre del contenedor `docker-api` (por defecto `nexploy_docker_api`) — usado durante las actualizaciones de la instancia |
 | `UPGRADER_CONTAINER_NAME` | Nombre del contenedor efímero que ejecuta la actualización de la instancia (por defecto `nexploy_upgrader`) |
-| `NEXPLOY_APP_NETWORK_ALIAS` | Alias de red del contenedor de la app recreado durante una actualización (por defecto `nexploy`) |
-| `DOCKER_API_NETWORK_ALIAS` | Alias de red del contenedor `docker-api` recreado durante una actualización (por defecto `docker-api`) |
 | `NEXPLOY_IMAGE_REPOSITORY` | Repositorio de imágenes descargado para la app durante una actualización (por defecto `nexploy/nexploy`) |
 | `DOCKER_API_IMAGE_REPOSITORY` | Repositorio de imágenes descargado para `docker-api` durante una actualización (por defecto `nexploy/docker-api`) |
 | `INNGEST_CONTAINER_NAME` | Nombre del contenedor Inngest, reiniciado tras una actualización de la instancia (por defecto `nexploy_inngest`) |
@@ -82,9 +78,9 @@ Ninguna de las dos aplicaciones lee estas variables: configuran la propia imagen
 </Callout>
 
 <Callout type="warn" title="NEXPLOY_API_KEY debe ser idéntica en ambos lados">
-  Es el **mismo** nombre de variable y el **mismo** secreto en `apps/nexploy/.env` y `apps/docker-api/.env`. Un desajuste entre ambos hace fallar todas las llamadas entre los dos servicios con un error `401`. En producción no la fijes: ambos contenedores se sincronizan mediante `NEXPLOY_API_KEY_FILE`.
+  Es el **mismo** nombre de variable y el **mismo** secreto en `apps/nexploy/.env` y `apps/docker-api/.env`. Un desajuste entre ambos hace fallar todas las llamadas entre los dos servicios con un error `401`. En producción no la fijes: `docker-api` la recupera de nexploy.
 </Callout>
 
 <Callout type="warn" title="ENCRYPTION_KEY también debe ser idéntica en ambos lados">
-  `docker-api` la usa como `x-internal-secret` para que nexploy verifique las claves API que recibe. Un valor distinto rechaza todas las llamadas entrantes.
+  `docker-api` la usa como `x-internal-secret` para volver a llamar a nexploy (recuperación de su clave API en la primera llamada y luego verificación de las claves API que recibe). Un valor distinto rompe ambas cosas.
 </Callout>
