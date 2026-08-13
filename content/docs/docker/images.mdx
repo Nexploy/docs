@@ -6,3 +6,7 @@ description: Gérer les images Docker
 - Liste des images, tags, tailles.
 - Pull, tag, suppression, nettoyage (prune).
 - Scan de vulnérabilités, propulsé par **Trivy** — également disponible en pipeline via le nœud `scan-image`.
+
+<Callout title="Les images de Nexploy sont masquées">
+  Les images `nexploy/nexploy` et `nexploy/docker-api`, qui font tourner l'instance, n'apparaissent pas dans la liste et ne sont accessibles par aucune route : inspection, historique, tag, export et suppression répondent `404`. Ces deux dépôts sont aussi réservés comme cible d'un tag, d'un import ou d'un miroir.
+</Callout>

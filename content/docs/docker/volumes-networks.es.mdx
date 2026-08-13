@@ -6,6 +6,10 @@ description: Gestionar volúmenes, redes y stacks de docker-compose
 - Creación, inspección y eliminación de volúmenes y redes Docker.
 - Importación de un volumen desde un archivo `.tar.gz`, desde la página **Volúmenes**. La exportación correspondiente está en **Administración > Copias de seguridad** — ver [Copias de seguridad](/es/features/backups).
 
+<Callout title="Los volúmenes y redes de Nexploy están ocultos">
+  Los volúmenes `nexploy_db`, `nexploy_traefik_acme` y `nexploy_deployer_workdir`, así como las redes `nexploy_network` y `nexploy_traefik_network`, hacen funcionar la instancia. No aparecen en las listas y ninguna ruta llega a ellos, ni siquiera conociendo su identificador: inspección, eliminación, importación y exportación responden `404`. Sus nombres también están reservados al crear.
+</Callout>
+
 ## Docker Compose
 
 - Despliegue y validación de stacks de docker-compose.

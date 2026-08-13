@@ -9,3 +9,7 @@ Nexploy provides a complete dashboard to drive your Docker containers:
 - Start, stop, restart, delete.
 - Live log viewing.
 - **Browser terminal** — shell access via WebSocket.
+
+<Callout title="Nexploy's own containers are hidden">
+  The instance containers — `nexploy_app`, `nexploy_docker_api`, `nexploy_traefik`, `nexploy_postgres`, `nexploy_inngest` and `nexploy_upgrader` — never show up in the list, and no route reaches them even with their id in hand: inspect, logs, stats, terminal, start, stop, restart and delete all answer `404`. Those names are reserved too, so no container can be created or renamed to one of them.
+</Callout>

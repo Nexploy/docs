@@ -9,3 +9,7 @@ Nexploy ofrece un panel completo para pilotar tus contenedores Docker:
 - Iniciar, detener, reiniciar y eliminar.
 - Consulta de los logs en directo.
 - **Terminal en el navegador** — acceso shell mediante WebSocket.
+
+<Callout title="Los contenedores de Nexploy están ocultos">
+  Los contenedores de la instancia — `nexploy_app`, `nexploy_docker_api`, `nexploy_traefik`, `nexploy_postgres`, `nexploy_inngest` y `nexploy_upgrader` — no aparecen en la lista y ninguna ruta llega a ellos, ni siquiera conociendo su identificador: inspección, logs, estadísticas, terminal, inicio, parada, reinicio y eliminación responden `404`. Esos nombres también están reservados: ningún contenedor puede crearse ni renombrarse con uno de ellos.
+</Callout>
