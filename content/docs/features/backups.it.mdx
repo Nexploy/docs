@@ -1,6 +1,6 @@
 ---
 title: Backup
-description: Backup pianificati dei tuoi volumi verso uno storage a oggetti
+description: Backup pianificati dei tuoi volumi verso uno storage a oggetti, esportazione e importazione manuali
 ---
 
 Nexploy permette di pianificare **backup** dei tuoi volumi Docker verso uno storage a oggetti.
@@ -8,3 +8,21 @@ Nexploy permette di pianificare **backup** dei tuoi volumi Docker verso uno stor
 - **Storage** — bucket compatibili S3 (credenziali configurabili).
 - **Pianificazione** — frequenza configurabile (giornaliera, settimanale…).
 - **Automazione** — tramite il nodo `backup-volume-bucket-storage` in una pipeline.
+
+## Esportazione e importazione manuali
+
+Al di fuori di qualsiasi pianificazione, un volume può essere scaricato come archivio e reinserito, sulla stessa istanza o su un'altra.
+
+| Azione | Dove | Risultato |
+| --- | --- | --- |
+| Esportazione | **Amministrazione > Backup**, pulsante su ogni volume | Scarica un archivio `<volume>-<timestamp>.tar.gz` |
+| Importazione | **Docker > Volumi**, pulsante di importazione | L'archivio viene estratto nel volume, creato se non esiste |
+
+Entrambe le operazioni passano da un container `alpine` effimero che monta il volume ed esegue `tar`; l'esportazione lo monta in sola lettura.
+
+L'importazione accetta archivi `.tar.gz` e `.tgz`. L'opzione **Sovrascrivi** svuota il contenuto del volume prima dell'estrazione; senza di essa, l'importazione viene rifiutata se il volume esiste già. L'operazione è tracciata come un task `volume-import`, con un limite massimo di 15 minuti.
+
+<Callout>
+  L'esportazione richiede il permesso `backup.create`. L'importazione richiede `backup.restore` **e**
+  `volume.manage`: un ruolo `developer` può quindi esportare un volume, ma non importarne uno.
+</Callout>

@@ -1,6 +1,6 @@
 ---
 title: Sauvegardes
-description: Sauvegardes planifiées de vos volumes vers un stockage objet
+description: Sauvegardes planifiées de vos volumes vers un stockage objet, export et import manuels
 ---
 
 Nexploy permet de planifier des **sauvegardes** de vos volumes Docker vers un stockage objet.
@@ -8,3 +8,21 @@ Nexploy permet de planifier des **sauvegardes** de vos volumes Docker vers un st
 - **Stockage** — buckets compatibles S3 (credentials configurables).
 - **Planification** — fréquence configurable (quotidienne, hebdomadaire…).
 - **Automatisation** — via le nœud `backup-volume-bucket-storage` dans un pipeline.
+
+## Export et import manuels
+
+En dehors de toute planification, un volume peut être téléchargé sous forme d'archive puis réinjecté, sur la même instance ou sur une autre.
+
+| Action | Où | Résultat |
+| --- | --- | --- |
+| Export | **Administration > Sauvegardes**, bouton sur chaque volume | Téléchargement d'une archive `<volume>-<horodatage>.tar.gz` |
+| Import | **Docker > Volumes**, bouton d'import | L'archive est extraite dans le volume, créé s'il n'existe pas |
+
+Les deux opérations passent par un conteneur `alpine` éphémère qui monte le volume et exécute `tar` — l'export le monte en lecture seule.
+
+L'import accepte les archives `.tar.gz` et `.tgz`. L'option **Écraser** vide le contenu du volume avant extraction ; sans elle, l'import est refusé si le volume existe déjà. L'opération est suivie comme une tâche `volume-import`, avec un délai maximal de 15 minutes.
+
+<Callout>
+  L'export requiert la permission `backup.create`. L'import requiert `backup.restore` **et**
+  `volume.manage` : un rôle `developer` peut donc exporter un volume, mais pas en importer un.
+</Callout>

@@ -1,6 +1,6 @@
 ---
 title: Copias de seguridad
-description: Copias de seguridad programadas de tus volúmenes hacia un almacenamiento de objetos
+description: Copias de seguridad programadas de tus volúmenes hacia un almacenamiento de objetos, exportación e importación manuales
 ---
 
 Nexploy permite programar **copias de seguridad** de tus volúmenes Docker hacia un almacenamiento de objetos.
@@ -8,3 +8,21 @@ Nexploy permite programar **copias de seguridad** de tus volúmenes Docker hacia
 - **Almacenamiento** — buckets compatibles con S3 (credenciales configurables).
 - **Programación** — frecuencia configurable (diaria, semanal…).
 - **Automatización** — mediante el nodo `backup-volume-bucket-storage` en una pipeline.
+
+## Exportación e importación manuales
+
+Al margen de cualquier programación, un volumen puede descargarse como archivo comprimido y volver a inyectarse, en la misma instancia o en otra.
+
+| Acción | Dónde | Resultado |
+| --- | --- | --- |
+| Exportación | **Administración > Copias de seguridad**, botón en cada volumen | Descarga un archivo `<volumen>-<marca-de-tiempo>.tar.gz` |
+| Importación | **Docker > Volúmenes**, botón de importación | El archivo se extrae en el volumen, creado si no existe |
+
+Ambas operaciones pasan por un contenedor `alpine` efímero que monta el volumen y ejecuta `tar`; la exportación lo monta en solo lectura.
+
+La importación acepta archivos `.tar.gz` y `.tgz`. La opción **Sobrescribir** vacía el contenido del volumen antes de la extracción; sin ella, la importación se rechaza si el volumen ya existe. La operación se sigue como una tarea `volume-import`, con un plazo máximo de 15 minutos.
+
+<Callout>
+  La exportación requiere el permiso `backup.create`. La importación requiere `backup.restore` **y**
+  `volume.manage`: un rol `developer` puede por tanto exportar un volumen, pero no importar uno.
+</Callout>

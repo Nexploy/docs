@@ -1,6 +1,6 @@
 ---
 title: Backups
-description: Scheduled backups of your volumes to object storage
+description: Scheduled backups of your volumes to object storage, plus manual export and import
 ---
 
 Nexploy lets you schedule **backups** of your Docker volumes to object storage.
@@ -8,3 +8,21 @@ Nexploy lets you schedule **backups** of your Docker volumes to object storage.
 - **Storage** — S3-compatible buckets (configurable credentials).
 - **Scheduling** — configurable frequency (daily, weekly…).
 - **Automation** — via the `backup-volume-bucket-storage` node in a pipeline.
+
+## Manual export and import
+
+Outside of any schedule, a volume can be downloaded as an archive and injected back, on the same instance or another one.
+
+| Action | Where | Result |
+| --- | --- | --- |
+| Export | **Administration > Backups**, button on each volume | Downloads a `<volume>-<timestamp>.tar.gz` archive |
+| Import | **Docker > Volumes**, import button | The archive is extracted into the volume, created if it does not exist |
+
+Both operations run through an ephemeral `alpine` container that mounts the volume and runs `tar` — the export mounts it read-only.
+
+The import accepts `.tar.gz` and `.tgz` archives. The **Overwrite** option empties the volume before extraction; without it, the import is refused if the volume already exists. The operation is tracked as a `volume-import` task, with a 15-minute maximum duration.
+
+<Callout>
+  Exporting requires the `backup.create` permission. Importing requires `backup.restore` **and**
+  `volume.manage`: a `developer` role can therefore export a volume, but not import one.
+</Callout>
