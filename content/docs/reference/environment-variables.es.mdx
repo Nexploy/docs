@@ -45,6 +45,7 @@ Solo `nexploy-cli` (la herramienta de recuperación, distinta de la aplicación)
 | `PORT` | Puerto de escucha (por defecto `3300`) |
 | `NODE_ENV` | Modo de ejecución — fijado a `production` por `install.sh` |
 | `LOG_LEVEL` | Nivel de log |
+| `NEXPLOY_DEBUG` | `true` expone los recursos de infraestructura de Nexploy y levanta todas las protecciones asociadas — **peligroso**, ver el aviso al final de la página. Ponla también en `apps/nexploy/.env` |
 | `DOCKER_SOCKET` | Ruta del socket Docker a pilotar (por defecto `/var/run/docker.sock`). En Colima o Docker Desktop macOS, apúntala al socket real (`~/.colima/default/docker.sock`, `~/.docker/run/docker.sock`) |
 | `NEXPLOY_API_URL` | URL de la app nexploy, para volver a llamar a la app |
 | `NEXPLOY_API_KEY` | Clave enviada a la app nexploy para autenticarse (carga de los entornos, sincronización de las eliminaciones) — mismo valor que `NEXPLOY_API_KEY` del lado de nexploy. Si falta, `docker-api` la recupera en su primera llamada mediante `GET /api/internal/docker-api-key` (autenticado por `ENCRYPTION_KEY`) y la conserva en memoria — es lo que hacen las imágenes Docker, en ese caso no la fijes manualmente |
@@ -83,4 +84,12 @@ Ninguna de las dos aplicaciones lee estas variables: configuran la propia imagen
 
 <Callout type="warn" title="ENCRYPTION_KEY también debe ser idéntica en ambos lados">
   `docker-api` la usa como `x-internal-secret` para volver a llamar a nexploy (recuperación de su clave API en la primera llamada y luego verificación de las claves API que recibe). Un valor distinto rompe ambas cosas.
+</Callout>
+
+<Callout type="warn" title="NEXPLOY_DEBUG expone la infraestructura de la instancia">
+  Nexploy oculta sus propios contenedores (`nexploy_app`, `nexploy_docker_api`, `nexploy_traefik`, `nexploy_postgres`, `nexploy_inngest`, `nexploy_upgrader`), sus imágenes (`nexploy/nexploy`, `nexploy/docker-api`), sus redes (`nexploy_network`, `nexploy_traefik_network`) y sus volúmenes (`nexploy_db`, `nexploy_traefik_acme`, `nexploy_deployer_workdir`), y rechaza cualquier ruta que los apunte por identificador.
+
+  `NEXPLOY_DEBUG=true` lo levanta todo: vuelven a ser listables, inspeccionables y manejables como cualquier otro recurso. Detener `nexploy_postgres`, eliminar `nexploy_traefik_network` o vaciar `nexploy_db` deja la instancia fuera de servicio, y eliminar el volumen de la base de datos es irrecuperable.
+
+  Resérvalo para depurar una instancia rota, en una máquina que puedas permitirte romper. Debe estar puesta en **ambos** contenedores: `docker-api` aplica las protecciones y la app aplica una propia.
 </Callout>

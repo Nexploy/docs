@@ -12,4 +12,6 @@ Nexploy ofrece un panel completo para pilotar tus contenedores Docker:
 
 <Callout title="Los contenedores de Nexploy están ocultos">
   Los contenedores de la instancia — `nexploy_app`, `nexploy_docker_api`, `nexploy_traefik`, `nexploy_postgres`, `nexploy_inngest` y `nexploy_upgrader` — no aparecen en la lista y ninguna ruta llega a ellos, ni siquiera conociendo su identificador: inspección, logs, estadísticas, terminal, inicio, parada, reinicio y eliminación responden `404`. Esos nombres también están reservados: ningún contenedor puede crearse ni renombrarse con uno de ellos.
+
+  `NEXPLOY_DEBUG=true` levanta esta ocultación — ver [Variables de entorno](/es/reference/environment-variables).
 </Callout>

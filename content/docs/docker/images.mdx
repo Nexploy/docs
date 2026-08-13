@@ -9,4 +9,6 @@ description: Gérer les images Docker
 
 <Callout title="Les images de Nexploy sont masquées">
   Les images `nexploy/nexploy` et `nexploy/docker-api`, qui font tourner l'instance, n'apparaissent pas dans la liste et ne sont accessibles par aucune route : inspection, historique, tag, export et suppression répondent `404`. Ces deux dépôts sont aussi réservés comme cible d'un tag, d'un import ou d'un miroir.
+
+  `NEXPLOY_DEBUG=true` lève ce masquage — voir [Variables d'environnement](/reference/environment-variables).
 </Callout>

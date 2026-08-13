@@ -8,6 +8,8 @@ description: Gestire volumi, reti e stack docker-compose
 
 <Callout title="I volumi e le reti di Nexploy sono nascosti">
   I volumi `nexploy_db`, `nexploy_traefik_acme` e `nexploy_deployer_workdir`, così come le reti `nexploy_network` e `nexploy_traefik_network`, fanno girare l'istanza. Non compaiono negli elenchi e nessuna rotta li raggiunge, nemmeno conoscendone l'identificativo: ispezione, eliminazione, import ed export rispondono `404`. Anche i loro nomi sono riservati alla creazione.
+
+  `NEXPLOY_DEBUG=true` rimuove questo mascheramento — vedi [Variabili d'ambiente](/it/reference/environment-variables).
 </Callout>
 
 ## Docker Compose

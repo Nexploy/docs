@@ -12,4 +12,6 @@ Nexploy fournit un tableau de bord complet pour piloter vos conteneurs Docker :
 
 <Callout title="Les conteneurs de Nexploy sont masqués">
   Les conteneurs de l'instance — `nexploy_app`, `nexploy_docker_api`, `nexploy_traefik`, `nexploy_postgres`, `nexploy_inngest` et `nexploy_upgrader` — n'apparaissent pas dans la liste et ne sont accessibles par aucune route, même en connaissant leur identifiant : inspection, logs, stats, terminal, démarrage, arrêt, redémarrage et suppression répondent `404`. Ces noms sont aussi réservés, un conteneur ne peut pas être créé ni renommé avec l'un d'eux.
+
+  `NEXPLOY_DEBUG=true` lève ce masquage — voir [Variables d'environnement](/reference/environment-variables).
 </Callout>

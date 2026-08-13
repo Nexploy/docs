@@ -12,4 +12,6 @@ Nexploy offre una dashboard completa per pilotare i tuoi container Docker:
 
 <Callout title="I container di Nexploy sono nascosti">
   I container dell'istanza — `nexploy_app`, `nexploy_docker_api`, `nexploy_traefik`, `nexploy_postgres`, `nexploy_inngest` e `nexploy_upgrader` — non compaiono nell'elenco e nessuna rotta li raggiunge, nemmeno conoscendone l'identificativo: ispezione, log, statistiche, terminale, avvio, arresto, riavvio ed eliminazione rispondono `404`. Anche questi nomi sono riservati: nessun container può essere creato o rinominato con uno di essi.
+
+  `NEXPLOY_DEBUG=true` rimuove questo mascheramento — vedi [Variabili d'ambiente](/it/reference/environment-variables).
 </Callout>

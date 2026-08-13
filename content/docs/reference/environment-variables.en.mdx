@@ -45,6 +45,7 @@ Only `nexploy-cli` (the recovery tool, separate from the application) persists a
 | `PORT` | Listening port (default `3300`) |
 | `NODE_ENV` | Runtime mode — set to `production` by `install.sh` |
 | `LOG_LEVEL` | Log level |
+| `NEXPLOY_DEBUG` | `true` exposes Nexploy's infrastructure resources and lifts every guard on them — **dangerous**, see the warning at the bottom of this page. Set it on the `apps/nexploy/.env` side too |
 | `DOCKER_SOCKET` | Path to the Docker socket to drive (default `/var/run/docker.sock`). On Colima or Docker Desktop macOS, point it at the real socket (`~/.colima/default/docker.sock`, `~/.docker/run/docker.sock`) |
 | `NEXPLOY_API_URL` | URL of the nexploy app, to call it back |
 | `NEXPLOY_API_KEY` | Key sent to the nexploy app to authenticate (loading environments, syncing deletions) — same value as `NEXPLOY_API_KEY` on the nexploy side. If unset, `docker-api` fetches it on its first call via `GET /api/internal/docker-api-key` (authenticated with `ENCRYPTION_KEY`) and keeps it in memory — this is what the Docker images do, don't set it manually there |
@@ -83,4 +84,12 @@ Neither application reads these — they configure the PostgreSQL image itself. 
 
 <Callout type="warn" title="ENCRYPTION_KEY must match on both sides too">
   `docker-api` uses it as the `x-internal-secret` when it calls nexploy back (fetching its API key on the first call, then verifying the API keys it receives). A different value there breaks both.
+</Callout>
+
+<Callout type="warn" title="NEXPLOY_DEBUG exposes the instance infrastructure">
+  Nexploy hides its own containers (`nexploy_app`, `nexploy_docker_api`, `nexploy_traefik`, `nexploy_postgres`, `nexploy_inngest`, `nexploy_upgrader`), its images (`nexploy/nexploy`, `nexploy/docker-api`), its networks (`nexploy_network`, `nexploy_traefik_network`) and its volumes (`nexploy_db`, `nexploy_traefik_acme`, `nexploy_deployer_workdir`), and refuses every route that would reach them by id.
+
+  `NEXPLOY_DEBUG=true` lifts all of it: they become listable, inspectable and actionable like any other resource. Stopping `nexploy_postgres`, deleting `nexploy_traefik_network` or wiping `nexploy_db` takes the instance down, and deleting the database volume is unrecoverable.
+
+  Keep it for debugging a broken instance, on a machine you can afford to break. It must be set on **both** containers: `docker-api` enforces the guards, and the app enforces one of its own.
 </Callout>
