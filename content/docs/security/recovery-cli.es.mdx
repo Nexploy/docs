@@ -111,9 +111,39 @@ entrada `account` de tipo `credential` hace fallar el comando explícitamente,
 en lugar de crear una contraseña en una cuenta que no usa ninguna.
 </Callout>
 
+### `nexploy security unpublish-database [--dry-run] [--skip-backup] [-y]`
+
+Las instancias instaladas antes de `@nexploy/cli` v0.1.9 publicaban Postgres
+en `127.0.0.1:5432`. Ese binding es solo de loopback — nunca fue accesible
+desde la red — pero nada lo usa: `nexploy_app` se conecta por la red Docker
+(`nexploy_postgres:5432`), y la CLI se conecta a la IP bridge del contenedor.
+
+Este comando lo elimina recreando `nexploy_postgres` con la misma imagen, el
+mismo entorno, las mismas redes, labels, healthcheck y política de reinicio,
+sin el puerto publicado. El volumen con nombre se vuelve a montar, así que
+**no se pierde ningún dato**. `nexploy_app` se detiene antes y se arranca de
+nuevo después.
+
+```bash
+sudo nexploy security unpublish-database --dry-run   # muestra solo el plan
+sudo nexploy security unpublish-database
+```
+
+Primero se escribe un `pg_dump` en
+`<NEXPLOY_DIR>/<db>-pre-unpublish-<timestamp>.dump` (`0600`), salvo que se
+pase `--skip-backup`.
+
+<Callout title="Se detiene en lugar de adivinar">
+El comando se detiene antes de tocar nada si el dump falla, si los datos
+están en un volumen anónimo (que no sobreviviría a la recreación), o si el
+contenedor lo gestiona Docker Compose — en ese caso muestra los pasos
+`docker compose up -d --force-recreate` a ejecutar en su lugar. Volver a
+lanzarlo una vez eliminado el puerto no hace nada.
+</Callout>
+
 ## Log de auditoría
 
-Cada acción `admin` (éxito **o** fallo — clave no válida, usuario
+Cada acción `admin` y `security` (éxito **o** fallo — clave no válida, usuario
 no encontrado, etc.) se añade en JSON en
 `<NEXPLOY_DIR>/cli-audit.log` (por defecto `/etc/nexploy/cli-audit.log`),
 legible únicamente como root (`0600`). Cada entrada contiene un timestamp, el

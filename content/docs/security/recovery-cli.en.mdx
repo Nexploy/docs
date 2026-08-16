@@ -110,9 +110,38 @@ row makes the command fail explicitly, rather than creating a password on an
 account that doesn't use one.
 </Callout>
 
+### `nexploy security unpublish-database [--dry-run] [--skip-backup] [-y]`
+
+Instances installed before `@nexploy/cli` v0.1.9 published Postgres on
+`127.0.0.1:5432`. That binding is loopback-only — it was never reachable from
+the network — but nothing uses it: `nexploy_app` connects over the Docker
+network (`nexploy_postgres:5432`), and the CLI connects to the container's
+bridge IP.
+
+This command removes it by recreating `nexploy_postgres` with the same image,
+environment, networks, labels, healthcheck and restart policy, minus the
+published port. The named volume is reattached, so **no data is lost**.
+`nexploy_app` is stopped before and started again after.
+
+```bash
+sudo nexploy security unpublish-database --dry-run   # show the plan only
+sudo nexploy security unpublish-database
+```
+
+A `pg_dump` is written to `<NEXPLOY_DIR>/<db>-pre-unpublish-<timestamp>.dump`
+(`0600`) first, unless `--skip-backup` is passed.
+
+<Callout title="Aborts rather than guess">
+The command stops before touching anything if the dump fails, if the data
+lives in an anonymous volume (which would not survive recreation), or if the
+container is managed by Docker Compose — in that case it prints the
+`docker compose up -d --force-recreate` steps to run instead. Re-running it
+once the port is gone is a no-op.
+</Callout>
+
 ## Audit log
 
-Every `admin` action (success **or** failure — invalid key, user not found,
+Every `admin` and `security` action (success **or** failure — invalid key, user not found,
 etc.) is appended as a JSON line to `<NEXPLOY_DIR>/cli-audit.log` (default
 `/etc/nexploy/cli-audit.log`), root-only (`0600`). Each entry records a
 timestamp, host, OS user, action, outcome, and target — never the generated
