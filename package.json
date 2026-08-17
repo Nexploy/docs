@@ -1,6 +1,6 @@
 {
   "name": "docs",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Nexploy docs — how to self-host your own Docker deployment platform, an alternative to Vercel/Netlify.",
   "license": "GPL-3.0",
   "scripts": {
