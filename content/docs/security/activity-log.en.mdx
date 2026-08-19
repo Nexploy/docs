@@ -57,6 +57,26 @@ Clicking a row opens the entry detail, redacted metadata included.
 
 The page is wired to a dedicated SSE stream: new entries and purges are pushed live, with a heartbeat every 30 seconds.
 
+## Exporting the log
+
+An **Export** button opens a dialog above the table. The export is a streamed download; nothing is staged in a temporary file on the server.
+
+| Setting | Values |
+|---|---|
+| Format | `csv`, `json` or `ndjson` — `csv` by default |
+| Period | 24 hours, 7, 30 or 90 days, everything, or a custom range |
+| Status | all, `SUCCESS`, `FAILURE` or `DENIED` |
+| Source | all, `SERVER_ACTION` or `API_ROUTE` |
+| Search | option to carry over the search currently applied to the table |
+
+A custom range requires both bounds, and an end date earlier than the start date is rejected before the request goes out. The file is named `nexploy-activity-<timestamp>.<extension>`, the CSV carrying a UTF-8 BOM and 24 fixed columns. An export is capped at **100,000 entries**.
+
+<Callout title="The export is always anonymised">
+  There is no option to export raw entries. Every exported row goes through the same anonymisation: the actor id becomes an HMAC-SHA256 pseudonym, their email keeps its first letter and domain, their name is reduced to initials, the IP is truncated to `/24` (IPv4) or `/48` (IPv6), the user agent to a browser and OS family. Target name, error message and metadata additionally go through the secret redaction described above.
+</Callout>
+
+Exporting requires the `activity.read` permission — the same one as reading the log.
+
 ## Retention and purge
 
 Retention is set from **Administration → Settings**:

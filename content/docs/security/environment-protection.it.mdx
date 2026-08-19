@@ -79,7 +79,7 @@ La regola viene verificata in quattro punti, così nessun percorso la aggira:
 
 L'interfaccia disabilita i pulsanti per comodità; sono i tre livelli server a garantire il blocco, anche per una chiamata API diretta con una [chiave API](/it/security/api-keys).
 
-## Spostare un container tra due host
+## Spostare un container o uno stack tra due host
 
 Uno spostamento attraversa due ambienti, quindi vengono valutate due regole:
 
@@ -87,6 +87,8 @@ Uno spostamento attraversa due ambienti, quindi vengono valutate due regole:
 - **Spostamento in entrata** sull'ambiente di destinazione.
 
 Basta che una delle due sia bloccata perché lo spostamento fallisca.
+
+Uno **stack Compose** si sposta allo stesso modo e ricade sotto le stesse due regole: lo spostamento di uno stack viene valutato come uno spostamento di container, senza alcuna impostazione separata da selezionare.
 
 ## Che cosa non è la protezione
 

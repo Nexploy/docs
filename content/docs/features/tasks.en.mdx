@@ -21,12 +21,15 @@ A tracked task is only created when the operation comes from a user action. What
 | Resource | Task kinds |
 |---|---|
 | Containers | `container-create`, `container-start`, `container-stop`, `container-restart`, `container-pause`, `container-unpause`, `container-rename`, `container-restart-policy`, `container-recreate`, `container-migrate`, `container-remove`, `container-prune` |
-| Images | `image-pull`, `image-mirror`, `image-tag`, `image-remove`, `image-prune` |
-| Networks | `network-create`, `network-remove` |
-| Volumes | `volume-create`, `volume-remove`, `volume-prune` |
-| Compose stacks | `stack-start`, `stack-stop`, `stack-restart`, `stack-pause`, `stack-unpause`, `stack-remove` |
+| Images | `image-pull`, `image-push`, `image-mirror`, `image-tag`, `image-untag`, `image-import`, `image-load`, `image-save`, `image-remove`, `image-prune` |
+| Networks | `network-create`, `network-remove`, `network-prune` |
+| Volumes | `volume-create`, `volume-remove`, `volume-prune`, `volume-import` |
+| Compose stacks | `stack-start`, `stack-stop`, `stack-restart`, `stack-pause`, `stack-unpause`, `stack-deploy`, `stack-migrate`, `stack-remove` |
+| Swarm | `swarm-init`, `swarm-join`, `swarm-leave`, `swarm-node-promote`, `swarm-node-demote`, `swarm-node-drain`, `swarm-node-activate`, `swarm-node-pause`, `swarm-node-remove`, `swarm-service-create`, `swarm-service-update`, `swarm-service-scale`, `swarm-service-force-update`, `swarm-service-remove` |
+| System cleanup | `system-prune-containers`, `system-prune-images`, `system-prune-volumes`, `system-prune-build`, `system-prune-all` |
+| Builds | `build-pipeline` |
 
-Every kind maps to a resource — container, image, network or volume — and that resource decides which permissions apply. Stack tasks count as container tasks.
+Every kind maps to a resource — container, image, network, volume, Swarm, build or setting — and that resource decides which permissions apply. Stack tasks count as container tasks, and system cleanups as instance settings. A build task is managed with the `build:cancel` permission, not `build:manage`.
 
 ## Steps and progress
 

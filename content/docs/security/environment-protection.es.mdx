@@ -79,7 +79,7 @@ La regla se verifica en cuatro sitios, para que ninguna vía de acceso la esquiv
 
 La interfaz desactiva los botones por comodidad; son las tres capas de servidor las que garantizan el bloqueo, también para una llamada directa a la API con una [clave API](/es/security/api-keys).
 
-## Mover un contenedor entre dos hosts
+## Mover un contenedor o una stack entre dos hosts
 
 Un movimiento atraviesa dos entornos, así que se evalúan dos reglas:
 
@@ -87,6 +87,8 @@ Un movimiento atraviesa dos entornos, así que se evalúan dos reglas:
 - **Movimiento entrante** en el entorno de destino.
 
 Basta con que una de las dos esté bloqueada para que el movimiento falle.
+
+Una **stack Compose** se mueve de la misma manera y queda sujeta a las mismas dos reglas: el movimiento de una stack se evalúa como un movimiento de contenedor, sin ningún ajuste aparte que marcar.
 
 ## Lo que la protección no es
 

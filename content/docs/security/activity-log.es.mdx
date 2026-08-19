@@ -57,6 +57,26 @@ Al hacer clic en una fila se abre el detalle de la entrada, con los metadatos de
 
 La página está conectada a un flujo SSE dedicado: las nuevas entradas y las purgas se envían en directo, con un latido cada 30 segundos.
 
+## Exportar el registro
+
+Un botón **Exportar** abre un diálogo encima de la tabla. La exportación es una descarga en flujo; no se genera ningún archivo temporal en el servidor.
+
+| Ajuste | Valores |
+|---|---|
+| Formato | `csv`, `json` o `ndjson` — `csv` por defecto |
+| Período | 24 horas, 7, 30 o 90 días, todo, o un intervalo personalizado |
+| Estado | todos, `SUCCESS`, `FAILURE` o `DENIED` |
+| Fuente | todas, `SERVER_ACTION` o `API_ROUTE` |
+| Búsqueda | opción para reutilizar la búsqueda aplicada en ese momento a la tabla |
+
+Un intervalo personalizado exige ambos extremos, y una fecha de fin anterior a la de inicio se rechaza antes del envío. El archivo se llama `nexploy-activity-<marca-de-tiempo>.<extensión>`, con un BOM UTF-8 y 24 columnas fijas en el caso del CSV. Una exportación está limitada a **100 000 entradas**.
+
+<Callout title="La exportación siempre está anonimizada">
+  No existe opción para exportar las entradas en bruto. Cada fila exportada pasa por la misma anonimización: el identificador del actor se convierte en un seudónimo HMAC-SHA256, su email conserva la primera letra y el dominio, su nombre se reduce a las iniciales, la IP se trunca a `/24` (IPv4) o `/48` (IPv6), el user-agent a una familia de navegador y de sistema operativo. El nombre del objetivo, el mensaje de error y los metadatos pasan además por la depuración de secretos descrita más arriba.
+</Callout>
+
+Exportar requiere el permiso `activity.read` — el mismo que consultar el registro.
+
 ## Retención y purga
 
 La retención se configura desde **Administración → Ajustes**:

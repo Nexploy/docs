@@ -21,5 +21,21 @@ Si has instalado Nexploy sin dominio (modo IP, ver [Instalación](/es/getting-st
 Este cambio solo está disponible para las instancias instaladas mediante `install.sh` — no para un despliegue `docker-compose`, donde el dominio queda fijado de una vez por todas en el archivo compose.
 
 <Callout type="warn">
-Este cambio de dirección (IP → dominio, o al revés) modifica la URL base de la instancia. Si has configurado una aplicación OAuth en tu proveedor git (GitHub, GitLab, etc.), su **URL de redirección (callback URL)** sigue apuntando a la dirección antigua y debe actualizarse **manualmente** en los ajustes de la aplicación OAuth del proveedor — Nexploy no la sincroniza automáticamente.
+Este cambio de dirección (IP → dominio, o al revés) modifica la URL base de la instancia. La **URL de redirección (callback URL)** de la aplicación OAuth en el proveedor git sigue apuntando a la dirección antigua y debe actualizarse **manualmente**: ningún proveedor expone una API para cambiarla.
 </Callout>
+
+Los **webhooks**, en cambio, se repropagan automáticamente al guardar, en todos los repositorios que tienen uno: la URL del webhook de la GitHub App se reescribe, los webhooks de GitHub, GitLab y Gitea se modifican in situ, y los de Bitbucket y Azure Repos —cuya API no permite modificarlos— se recrean. El resultado queda registrado en el [registro de actividad](/es/security/activity-log) bajo `admin.propagateInstanceUrl`, con el detalle de los repositorios fallidos.
+
+Tras guardar, **Admin → Ajustes** muestra la lista de URLs que espera cada proveedor configurado — callback OAuth, redirección de instalación, webhook, página de inicio — cada una marcada como «automática» cuando Nexploy se encarga de ella, con un enlace directo a los ajustes de la aplicación en el proveedor.
+
+### IP de reserva
+
+Un cambio de dominio que sale mal — DNS aún sin propagar, certificado no emitido — puede dejar la instancia inaccesible, incluso para deshacer el cambio. El campo **IP de reserva** lo evita: al rellenarlo, añade un segundo router Traefik en HTTP simple sobre esa IP, que sirve la misma app, junto al router HTTPS del dominio. El origen correspondiente también se añade a los orígenes de confianza de la autenticación, sin lo cual el inicio de sesión desde esa dirección sería rechazado.
+
+El campo solo surte efecto en HTTPS: en modo IP la instancia ya se sirve en su dirección. Corresponde a la variable `NEXPLOY_FALLBACK_IP`, establecida y eliminada automáticamente — ver [Variables de entorno](/es/reference/environment-variables).
+
+### Cabeceras de seguridad
+
+El router de la propia app Nexploy pasa por un middleware `security-headers` que fija `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, un `Referrer-Policy` en `strict-origin-when-cross-origin` y, solo en HTTPS, un HSTS de un año con `includeSubdomains` y `preload`. En modo IP se aplica en su lugar una variante sin HSTS — fijar HSTS sobre una dirección IP bloquearía su acceso por HTTP.
+
+Estas cabeceras protegen la interfaz de administración, no tus despliegues: los routers generados por repositorio no las reciben. Añádelas tú mismo en la configuración Traefik de un repositorio si las necesitas.

@@ -28,7 +28,21 @@ Fill in a **name**, the **domain**, then paste the **certificate** and the **pri
 
 Nexploy validates the pair before storing anything: an unreadable PEM, an unreadable key, or a key that doesn't match the certificate are all rejected with an explicit error. The expiry date is read out of the certificate and shown in the table.
 
+The **domain** field accepts a wildcard: `*.example.com` covers `app.example.com` or `api.example.com`, but only one level of subdomain — neither `example.com` itself, nor `a.b.example.com`.
+
+Nexploy also reads the CN and the SANs out of the PEM and keeps them as the entry's **covered domains**. It is that list, not the domain field alone, that is later used to check whether a certificate really covers a given host.
+
 Once validated, both files are written into the `certs/` directory of the Traefik file provider and a `nexploy-certs.yml` file declaring every custom certificate is regenerated. Traefik hot-reloads it, no restart. If the write fails, the record created in the database is deleted — no phantom entry in the inventory.
+
+## Editing a custom certificate
+
+Only a **Custom** entry can be edited — a Let's Encrypt entry cannot, since the certificate belongs to Traefik.
+
+The **name** and the **domain** can be changed on their own. The PEM and the private key are optional: leaving them empty keeps the files in place, and replacing them means supplying **both together** — filling in only one of the two is rejected. A replacement goes through the same validation as a creation, and refreshes the expiry date along with the covered domains re-read from the new PEM.
+
+If the certificate is the one serving the instance itself (see [Reverse proxy & SSL](/networking/traefik-ssl)), the replacement is refused when the new PEM no longer covers the instance domain — the edit fails before writing anything, rather than leaving the app unreachable.
+
+If writing the files fails, the previous ones are restored and nothing is changed in the database.
 
 ## Reading the table
 
@@ -38,7 +52,7 @@ Once validated, both files are written into the `certs/` directory of the Traefi
 Deleting an entry also removes the `.pem` / `.key` files and regenerates `nexploy-certs.yml` when it was a custom certificate.
 
 <Callout type="warn">
-Deletion is not blocked while a domain still uses the certificate. The matching Traefik router then falls back to Traefik's default certificate and browsers show a warning. Check the affected domains before deleting.
+Deletion is refused for the certificate serving the instance itself. It is not blocked while a plain deployment domain still uses the certificate. The matching Traefik router then falls back to Traefik's default certificate and browsers show a warning. Check the affected domains before deleting.
 </Callout>
 
 ## Using a certificate on a domain
@@ -49,7 +63,7 @@ A certificate can also be created during a build with the [`add-ssl-certificate`
 
 ## Who can touch it
 
-| Role | Read | Create / delete |
+| Role | Read | Create / edit / delete |
 |---|---|---|
 | Instance — `admin`, `developer` | yes | yes |
 | Instance — `guest` | no | no |

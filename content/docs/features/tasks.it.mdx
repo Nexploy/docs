@@ -21,12 +21,15 @@ Un'attività tracciata viene creata solo se l'operazione proviene da un'azione u
 | Risorsa | Tipi di attività |
 |---|---|
 | Contenitori | `container-create`, `container-start`, `container-stop`, `container-restart`, `container-pause`, `container-unpause`, `container-rename`, `container-restart-policy`, `container-recreate`, `container-migrate`, `container-remove`, `container-prune` |
-| Immagini | `image-pull`, `image-mirror`, `image-tag`, `image-remove`, `image-prune` |
-| Reti | `network-create`, `network-remove` |
-| Volumi | `volume-create`, `volume-remove`, `volume-prune` |
-| Stack Compose | `stack-start`, `stack-stop`, `stack-restart`, `stack-pause`, `stack-unpause`, `stack-remove` |
+| Immagini | `image-pull`, `image-push`, `image-mirror`, `image-tag`, `image-untag`, `image-import`, `image-load`, `image-save`, `image-remove`, `image-prune` |
+| Reti | `network-create`, `network-remove`, `network-prune` |
+| Volumi | `volume-create`, `volume-remove`, `volume-prune`, `volume-import` |
+| Stack Compose | `stack-start`, `stack-stop`, `stack-restart`, `stack-pause`, `stack-unpause`, `stack-deploy`, `stack-migrate`, `stack-remove` |
+| Swarm | `swarm-init`, `swarm-join`, `swarm-leave`, `swarm-node-promote`, `swarm-node-demote`, `swarm-node-drain`, `swarm-node-activate`, `swarm-node-pause`, `swarm-node-remove`, `swarm-service-create`, `swarm-service-update`, `swarm-service-scale`, `swarm-service-force-update`, `swarm-service-remove` |
+| Pulizia di sistema | `system-prune-containers`, `system-prune-images`, `system-prune-volumes`, `system-prune-build`, `system-prune-all` |
+| Build | `build-pipeline` |
 
-Ogni tipo è legato a una risorsa — contenitore, immagine, rete o volume — ed è quella risorsa a decidere i permessi applicati. Le attività di stack contano come attività di contenitore.
+Ogni tipo è legato a una risorsa — contenitore, immagine, rete, volume, Swarm, build o impostazione — ed è quella risorsa a decidere i permessi applicati. Le attività di stack contano come attività di contenitore e le pulizie di sistema come impostazioni dell'istanza. Un'attività di build si gestisce con il permesso `build:cancel`, non `build:manage`.
 
 ## Fasi e avanzamento
 

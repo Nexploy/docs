@@ -28,7 +28,21 @@ Renseignez un **nom**, le **domaine**, puis collez le **certificat** et la **cl�
 
 Nexploy valide la paire avant d'enregistrer quoi que ce soit : un PEM illisible, une clé illisible ou une clé qui ne correspond pas au certificat sont rejetés avec une erreur explicite. La date d'expiration est lue dans le certificat et affichée dans le tableau.
 
+Le champ **domaine** accepte un joker : `*.example.com` couvre `app.example.com` ou `api.example.com`, mais un seul niveau de sous-domaine — ni `example.com` lui-même, ni `a.b.example.com`.
+
+Nexploy lit aussi le CN et les SAN du PEM et les conserve comme **domaines couverts** de l'entrée. C'est cette liste, et non le seul champ domaine, qui sert ensuite à vérifier qu'un certificat couvre bien un hôte donné.
+
 Une fois validé, les deux fichiers sont écrits dans le répertoire `certs/` du provider fichier Traefik et un fichier `nexploy-certs.yml` déclarant l'ensemble des certificats personnalisés est régénéré. Traefik le recharge à chaud, sans redémarrage. Si l'écriture échoue, l'entrée créée en base est supprimée — pas de certificat fantôme dans l'inventaire.
+
+## Modifier un certificat personnalisé
+
+Seule une entrée de type **Personnalisé** est modifiable — une entrée Let's Encrypt ne l'est pas, puisque le certificat appartient à Traefik.
+
+Le **nom** et le **domaine** se modifient seuls. Le PEM et la clé privée sont facultatifs : les laisser vides conserve les fichiers en place, et les remplacer suppose de fournir **les deux ensemble** — un seul des deux champs rempli est refusé. Un remplacement repasse par la même validation qu'à la création, et met à jour la date d'expiration ainsi que les domaines couverts relus dans le nouveau PEM.
+
+Si le certificat est celui qui sert l'instance elle-même (voir [Reverse proxy & SSL](/networking/traefik-ssl)), le remplacement est refusé quand le nouveau PEM ne couvre plus le domaine de l'instance — la modification échoue avant d'écrire quoi que ce soit, plutôt que de rendre l'app injoignable.
+
+Si l'écriture des fichiers échoue, les anciens sont restaurés et rien n'est modifié en base.
 
 ## Lire le tableau
 
@@ -38,7 +52,7 @@ Une fois validé, les deux fichiers sont écrits dans le répertoire `certs/` du
 Supprimer une entrée retire aussi les fichiers `.pem` / `.key` et régénère `nexploy-certs.yml` s'il s'agissait d'un certificat personnalisé.
 
 <Callout type="warn">
-La suppression n'est pas bloquée si un domaine utilise encore le certificat. Le router Traefik correspondant retombe alors sur le certificat par défaut de Traefik, et le navigateur affiche un avertissement. Vérifiez les domaines concernés avant de supprimer.
+La suppression est refusée pour le certificat qui sert l'instance elle-même. Elle n'est pas bloquée quand un simple domaine de déploiement utilise encore le certificat. Le router Traefik correspondant retombe alors sur le certificat par défaut de Traefik, et le navigateur affiche un avertissement. Vérifiez les domaines concernés avant de supprimer.
 </Callout>
 
 ## Utiliser un certificat sur un domaine
@@ -49,7 +63,7 @@ Un certificat peut aussi être créé au fil d'un build avec le nœud [`add-ssl-
 
 ## Qui peut y toucher
 
-| Rôle | Lecture | Création / suppression |
+| Rôle | Lecture | Création / modification / suppression |
 |---|---|---|
 | Instance — `admin`, `developer` | oui | oui |
 | Instance — `guest` | non | non |

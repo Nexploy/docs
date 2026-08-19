@@ -36,7 +36,7 @@ NEXPLOY_NO_DOMAIN=true sh -c "$(curl -fsSL https://nexploy.app/install.sh)"
 ```
 
 <Callout type="warn">
-Plain HTTP means no certificate — fine to get started, not recommended long-term. You can switch to a real domain with HTTPS at any time, either from **Admin → Settings** in the app (it recreates the app container and restarts Traefik with the new settings, no reinstall needed) or manually — see [Reverse proxy & SSL](/networking/traefik-ssl). Remember to also manually update the OAuth redirect URL on your git provider's side — see [Reverse proxy & SSL](/networking/traefik-ssl).
+Plain HTTP means no certificate — fine to get started, not recommended long-term. You can switch to a real domain with HTTPS at any time, either from **Admin → Settings** in the app (it recreates the app container and restarts Traefik with the new settings, no reinstall needed) or manually — see [Reverse proxy & SSL](/networking/traefik-ssl). Git webhooks are re-propagated automatically, but the OAuth redirect URL still has to be updated manually on your provider's side; **Admin → Settings** lists the URLs involved after the switch — see [Reverse proxy & SSL](/networking/traefik-ssl).
 </Callout>
 
 ### Non-interactive install
@@ -51,6 +51,10 @@ NEXPLOY_DOMAIN=nexploy.example.com NEXPLOY_EMAIL=you@example.com \
 | `NEXPLOY_DOMAIN` | *(prompted)* | Domain the app is served on |
 | `NEXPLOY_EMAIL` | *(prompted if a domain is set)* | Let's Encrypt contact address |
 | `NEXPLOY_NO_DOMAIN` | `false` | Set to `true` to skip the domain and serve over the server's IP (plain HTTP) |
+| `NEXPLOY_TLS_MODE` | *(prompted if a domain is set)* | `letsencrypt`, or `custom` to bring your own certificate |
+| `NEXPLOY_TLS_CERT_FILE` | — | Path to the PEM certificate (full chain), in `custom` mode |
+| `NEXPLOY_TLS_KEY_FILE` | — | Path to the PEM private key, in `custom` mode |
+| `NEXPLOY_TLS_CERT` / `NEXPLOY_TLS_KEY` | — | The same values inline as PEM, instead of by path |
 | `NEXPLOY_VERSION` | *(latest release)* | Image tag to deploy, e.g. `v1.0.0` |
 | `NEXPLOY_DIR` | `/etc/nexploy` | Where secrets and Traefik config live |
 | `NEXPLOY_REPO` | `Nexploy/nexploy` | GitHub repo to resolve the latest release from |
@@ -74,6 +78,8 @@ curl -fsSL https://nexploy.app/install.sh | sh -s upgrade --force
 ```bash
 curl -fsSL https://nexploy.app/install.sh | sh -s uninstall
 ```
+
+Without a terminal (CI, cron, automated script), the confirmation cannot be asked: add `--yes` to explicitly confirm the destruction.
 
 <Callout type="warn" title="Destructive">
 This deletes your database, your deployments' metadata and every generated secret — there is no undo. You'll be asked to type `remove` to confirm.

@@ -31,6 +31,7 @@ Only `nexploy-cli` (the recovery tool, separate from the application) persists a
 | `ACME_EMAIL` | Let's Encrypt email used to render `traefik.yml` when `TRAEFIK_USE_TLS` isn't `false` |
 | `NEXPLOY_TLS_MODE` | The instance TLS mode: `letsencrypt`, `custom` or `ip` — inferred from `TRAEFIK_USE_TLS` when unset |
 | `NEXPLOY_TLS_CERTIFICATE_ID` | Id of the uploaded certificate to serve when `NEXPLOY_TLS_MODE` is `custom` |
+| `NEXPLOY_FALLBACK_IP` | Fallback IP to reach the instance over HTTP while it is served over HTTPS on a domain — adds a Traefik router on that IP and allows it as a trusted origin. Set and cleared automatically from Admin → Settings, only while TLS is on |
 | `DOCKER_SOCKET` | Path to the machine's Docker socket, used as the default *Socket path* for new environments and by `pnpm db:seed` for the local environment. Exposed to the browser as `NEXT_PUBLIC_DOCKER_SOCKET` by `next.config.ts`. Default `/var/run/docker.sock` — Colima: `~/.colima/default/docker.sock`, Docker Desktop macOS: `~/.docker/run/docker.sock` |
 | `TRAEFIK_TEMPLATES_DIR` | Directory of the Traefik templates used to render `traefik.yml` (optional — default `<cwd>/traefik-templates`) |
 | `HEAP_SOFT_LIMIT_MB` | Heap threshold in MB above which the server triggers a manual GC (optional — default `3200`) |

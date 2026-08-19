@@ -45,6 +45,8 @@ Create an **app registration** in Microsoft Entra ID, with the redirect URI (Web
 
 When a repository is connected, Nexploy automatically configures a webhook on it. On every push to the tracked branch, a build is triggered through the `webhook-clone` node. Each webhook is protected by a secret, and every incoming call is authenticated before anything runs: HMAC signature for GitHub, Gitea and Bitbucket, webhook token for GitLab, secret header for Azure Repos.
 
+Because the webhook URL contains the instance address, changing the domain from **Admin → Settings** re-propagates it to **every** repository that has a webhook, with no manual pass. GitHub, GitLab and Gitea expose an update API: the existing webhook is edited in place. Bitbucket and Azure Repos do not: their webhook is recreated. The GitHub App's own webhook URL is rewritten separately. The details, failed repositories included, are recorded in the [activity log](/en/security/activity-log) — see [Reverse proxy & SSL](/en/networking/traefik-ssl).
+
 ## Beyond cloning
 
 Once connected, the provider is also used by the pipeline nodes that write back to it. All five providers expose `update-commit-status` and `create-release` through their API. The `git-tag`, `merge-branch` and `cherry-pick-commit` nodes go through git itself using the stored credentials, so they work with any provider.

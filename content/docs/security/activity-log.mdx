@@ -57,6 +57,26 @@ Cliquer sur une ligne ouvre le détail de l'entrée, métadonnées expurgées co
 
 La page est branchée sur un flux SSE dédié : les nouvelles entrées et les purges y sont poussées en direct, avec un battement de cœur toutes les 30 secondes.
 
+## Exporter le journal
+
+Un bouton **Exporter** ouvre une boîte de dialogue au-dessus de la table. L'export est un téléchargement en flux, sans passer par un fichier temporaire côté serveur.
+
+| Réglage | Valeurs |
+|---|---|
+| Format | `csv`, `json` ou `ndjson` — `csv` par défaut |
+| Période | 24 heures, 7, 30 ou 90 jours, tout, ou un intervalle personnalisé |
+| Statut | tous, `SUCCESS`, `FAILURE` ou `DENIED` |
+| Source | toutes, `SERVER_ACTION` ou `API_ROUTE` |
+| Recherche | option pour reprendre la recherche en cours dans la table |
+
+Un intervalle personnalisé exige les deux bornes, et une date de fin antérieure à la date de début est refusée avant l'envoi. Le fichier est nommé `nexploy-activity-<horodatage>.<extension>`, le CSV portant un BOM UTF-8 et 24 colonnes fixes. Un export est plafonné à **100 000 entrées**.
+
+<Callout title="L'export est toujours anonymisé">
+  Il n'y a pas d'option pour exporter les entrées brutes. Chaque ligne exportée passe par la même anonymisation : l'identifiant de l'acteur devient un pseudonyme HMAC-SHA256, son e-mail garde la première lettre et le domaine, son nom est réduit à ses initiales, l'IP est tronquée en `/24` (IPv4) ou `/48` (IPv6), le user-agent en famille de navigateur et d'OS. Le nom de la cible, le message d'erreur et les métadonnées repassent en plus par l'expurgation des secrets décrite plus haut.
+</Callout>
+
+Exporter demande la permission `activity.read` — la même que consulter le journal.
+
 ## Rétention et purge
 
 La rétention se règle depuis **Administration → Paramètres** :

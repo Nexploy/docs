@@ -57,6 +57,26 @@ Cliccando su una riga si apre il dettaglio della voce, metadati oscurati compres
 
 La pagina è collegata a un flusso SSE dedicato: nuove voci e purghe vengono inviate in diretta, con un heartbeat ogni 30 secondi.
 
+## Esportare il registro
+
+Un pulsante **Esporta** apre una finestra di dialogo sopra la tabella. L'esportazione è un download in streaming; nessun file temporaneo viene creato sul server.
+
+| Impostazione | Valori |
+|---|---|
+| Formato | `csv`, `json` o `ndjson` — `csv` per impostazione predefinita |
+| Periodo | 24 ore, 7, 30 o 90 giorni, tutto, o un intervallo personalizzato |
+| Stato | tutti, `SUCCESS`, `FAILURE` o `DENIED` |
+| Origine | tutte, `SERVER_ACTION` o `API_ROUTE` |
+| Ricerca | opzione per riprendere la ricerca applicata al momento alla tabella |
+
+Un intervallo personalizzato richiede entrambi gli estremi, e una data di fine anteriore a quella di inizio viene rifiutata prima dell'invio. Il file si chiama `nexploy-activity-<marca-temporale>.<estensione>`, con un BOM UTF-8 e 24 colonne fisse nel caso del CSV. Un'esportazione è limitata a **100 000 voci**.
+
+<Callout title="L'esportazione è sempre anonimizzata">
+  Non esiste un'opzione per esportare le voci grezze. Ogni riga esportata passa dalla stessa anonimizzazione: l'identificativo dell'attore diventa uno pseudonimo HMAC-SHA256, la sua email conserva la prima lettera e il dominio, il suo nome è ridotto alle iniziali, l'IP è troncato a `/24` (IPv4) o `/48` (IPv6), lo user agent a una famiglia di browser e di sistema operativo. Il nome del bersaglio, il messaggio di errore e i metadati passano inoltre dall'oscuramento dei segreti descritto sopra.
+</Callout>
+
+Esportare richiede il permesso `activity.read` — lo stesso della consultazione del registro.
+
 ## Conservazione e purga
 
 La conservazione si imposta da **Amministrazione → Impostazioni**:

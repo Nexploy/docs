@@ -21,5 +21,21 @@ If you installed Nexploy without a domain (IP mode, see [Installation](/getting-
 This switch is only available for instances installed via `install.sh` — not for a `docker-compose` deployment, where the domain is fixed once and for all in the compose file.
 
 <Callout type="warn">
-This address change (IP → domain, or the reverse) changes the instance's base URL. If you configured an OAuth app with your git provider (GitHub, GitLab, etc.), its **redirect (callback) URL** still points to the old address and must be updated **manually** in the OAuth app settings on the provider's side — Nexploy does not sync it automatically.
+This address change (IP → domain, or the reverse) changes the instance's base URL. The **redirect (callback) URL** of your OAuth app on the git provider still points to the old address and must be updated **manually**: no provider exposes an API to change it.
 </Callout>
+
+**Webhooks**, on the other hand, are re-propagated automatically on save, across every repository that has one: the GitHub App's webhook URL is rewritten, GitHub, GitLab and Gitea webhooks are edited in place, and Bitbucket and Azure Repos ones — whose API offers no update — are recreated. The outcome is recorded in the [activity log](/en/security/activity-log) under `admin.propagateInstanceUrl`, listing the repositories that failed.
+
+After saving, **Admin → Settings** lists the URLs every configured provider expects — OAuth callback, setup redirect, webhook, homepage — each marked "automatic" when Nexploy handles it, with a direct link to the app's settings on the provider.
+
+### Fallback IP
+
+A domain change that goes wrong — DNS not propagated yet, certificate not issued — can leave the instance unreachable, including for rolling the change back. The **fallback IP** field prevents that: when filled in, it adds a second Traefik router over plain HTTP on that IP, serving the same app, alongside the HTTPS router on the domain. The matching origin is also added to the authentication's trusted origins, without which signing in from that address would be refused.
+
+The field only has an effect over HTTPS: in IP mode the instance is already served on its address. It maps to the `NEXPLOY_FALLBACK_IP` variable, set and cleared automatically — see [Environment variables](/en/reference/environment-variables).
+
+### Security headers
+
+The router for the Nexploy app itself goes through a `security-headers` middleware that sets `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, a `Referrer-Policy` of `strict-origin-when-cross-origin` and, over HTTPS only, a one-year HSTS with `includeSubdomains` and `preload`. In IP mode a variant without HSTS is applied instead — pinning HSTS on an IP address would lock out HTTP access to it.
+
+These headers protect the admin interface, not your deployments: the routers generated per repository do not get them. Add them yourself in a repository's Traefik configuration if you need them.

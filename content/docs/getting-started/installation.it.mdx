@@ -36,7 +36,7 @@ NEXPLOY_NO_DOMAIN=true sh -c "$(curl -fsSL https://nexploy.app/install.sh)"
 ```
 
 <Callout type="warn">
-HTTP semplice significa nessun certificato — comodo per iniziare, sconsigliato a lungo termine. Puoi passare a un vero dominio con HTTPS in qualsiasi momento, sia da **Admin → Impostazioni** nell'app (che ricrea il container dell'app e riavvia Traefik con le nuove impostazioni, senza reinstallazione), sia manualmente — vedi [Reverse proxy e SSL](/it/networking/traefik-ssl). Ricordati anche di aggiornare manualmente l'URL di reindirizzamento OAuth presso il tuo provider git — vedi [Reverse proxy e SSL](/it/networking/traefik-ssl).
+HTTP semplice significa nessun certificato — comodo per iniziare, sconsigliato a lungo termine. Puoi passare a un vero dominio con HTTPS in qualsiasi momento, sia da **Admin → Impostazioni** nell'app (che ricrea il container dell'app e riavvia Traefik con le nuove impostazioni, senza reinstallazione), sia manualmente — vedi [Reverse proxy e SSL](/it/networking/traefik-ssl). I webhook git vengono ripropagati automaticamente, ma l'URL di reindirizzamento OAuth resta da aggiornare manualmente presso il tuo provider; **Admin → Impostazioni** elenca gli URL coinvolti dopo il passaggio — vedi [Reverse proxy e SSL](/it/networking/traefik-ssl).
 </Callout>
 
 ### Installazione non interattiva
@@ -51,6 +51,10 @@ NEXPLOY_DOMAIN=nexploy.example.com NEXPLOY_EMAIL=you@example.com \
 | `NEXPLOY_DOMAIN` | *(richiesto)* | Dominio su cui l'app viene servita |
 | `NEXPLOY_EMAIL` | *(richiesto se è definito un dominio)* | Indirizzo di contatto Let's Encrypt |
 | `NEXPLOY_NO_DOMAIN` | `false` | A `true` per saltare il dominio e servire sull'IP del server (HTTP semplice) |
+| `NEXPLOY_TLS_MODE` | *(richiesto se è definito un dominio)* | `letsencrypt`, oppure `custom` per fornire il proprio certificato |
+| `NEXPLOY_TLS_CERT_FILE` | — | Percorso del certificato PEM (catena completa), in modalità `custom` |
+| `NEXPLOY_TLS_KEY_FILE` | — | Percorso della chiave privata PEM, in modalità `custom` |
+| `NEXPLOY_TLS_CERT` / `NEXPLOY_TLS_KEY` | — | Gli stessi valori direttamente in PEM, invece che tramite percorso |
 | `NEXPLOY_VERSION` | *(ultima release)* | Tag dell'immagine da distribuire, es. `v1.0.0` |
 | `NEXPLOY_DIR` | `/etc/nexploy` | Posizione dei secret e della configurazione Traefik |
 | `NEXPLOY_REPO` | `Nexploy/nexploy` | Repo GitHub usato per risolvere l'ultima release |
@@ -74,6 +78,8 @@ curl -fsSL https://nexploy.app/install.sh | sh -s upgrade --force
 ```bash
 curl -fsSL https://nexploy.app/install.sh | sh -s uninstall
 ```
+
+Senza terminale (CI, cron, script automatizzato), la conferma non può essere richiesta: aggiunga `--yes` per confermare esplicitamente la distruzione.
 
 <Callout type="warn" title="Distruttivo">
 Questo elimina il tuo database, i metadati dei tuoi deployment e tutti i secret generati — senza possibilità di tornare indietro. Verrà chiesta una conferma digitando `remove`.

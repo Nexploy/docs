@@ -79,7 +79,7 @@ The rule is checked in four places, so no path around it is left open:
 
 The UI disables buttons for convenience; the three server layers are what enforce the block, including for a direct API call with an [API key](/en/security/api-keys).
 
-## Moving a container between two hosts
+## Moving a container or a stack between two hosts
 
 A move crosses two environments, so two rules are evaluated:
 
@@ -87,6 +87,8 @@ A move crosses two environments, so two rules are evaluated:
 - **Incoming move** on the target environment.
 
 Either one being blocked fails the move.
+
+A **Compose stack** moves the same way and falls under the same two rules: moving a stack is evaluated as a container move, with no separate switch to tick.
 
 ## What protection is not
 

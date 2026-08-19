@@ -79,7 +79,7 @@ La règle est vérifiée à quatre endroits, pour qu'aucun chemin d'accès ne la
 
 L'interface désactive les boutons par confort ; ce sont les trois couches serveur qui garantissent le blocage, y compris pour un appel API direct avec une [clé API](/security/api-keys).
 
-## Déplacer un conteneur entre deux hôtes
+## Déplacer un conteneur ou une stack entre deux hôtes
 
 Un déplacement traverse deux environnements, donc deux règles sont évaluées :
 
@@ -87,6 +87,8 @@ Un déplacement traverse deux environnements, donc deux règles sont évaluées 
 - **Déplacement entrant** sur l'environnement cible.
 
 Il suffit que l'une des deux soit bloquée pour que le déplacement échoue.
+
+Une **stack Compose** se déplace de la même façon et tombe sous les mêmes deux règles : le déplacement d'une stack est évalué comme un déplacement de conteneur, sans réglage distinct à cocher.
 
 ## Ce que la protection n'est pas
 

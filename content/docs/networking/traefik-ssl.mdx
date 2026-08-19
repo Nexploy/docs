@@ -21,5 +21,21 @@ Si vous avez installé Nexploy sans domaine (mode IP, voir [Installation](/getti
 Cette bascule n'est disponible que pour les instances installées via `install.sh` — pas pour un déploiement `docker-compose` où le domaine est fixé une fois pour toutes dans le fichier compose.
 
 <Callout type="warn">
-Ce changement d'adresse (IP → domaine, ou l'inverse) modifie l'URL de base de l'instance. Si vous avez configuré une application OAuth chez votre fournisseur git (GitHub, GitLab, etc.), son **URL de redirection (callback URL)** reste pointée vers l'ancienne adresse et doit être mise à jour **manuellement** dans les paramètres de l'application OAuth chez le fournisseur — elle n'est pas synchronisée automatiquement par Nexploy.
+Ce changement d'adresse (IP → domaine, ou l'inverse) modifie l'URL de base de l'instance. L'**URL de redirection (callback URL)** de votre application OAuth chez le fournisseur git reste pointée vers l'ancienne adresse et doit être mise à jour **manuellement** : aucun fournisseur n'expose d'API pour la changer.
 </Callout>
+
+Les **webhooks**, en revanche, sont repropagés automatiquement à l'enregistrement, sur tous les dépôts qui en ont un : l'URL du webhook de la GitHub App est réécrite, les webhooks GitHub, GitLab et Gitea sont modifiés sur place, et ceux de Bitbucket et Azure Repos — dont l'API ne permet pas la modification — sont recréés. Le résultat est consigné dans le [journal d'activité](/security/activity-log) sous `admin.propagateInstanceUrl`, avec le détail des dépôts en échec.
+
+Après l'enregistrement, **Admin → Paramètres** affiche la liste des URLs attendues par chaque fournisseur configuré — callback OAuth, redirection d'installation, webhook, page d'accueil — chacune marquée « automatique » quand Nexploy s'en charge, avec un lien direct vers les réglages de l'application chez le fournisseur.
+
+### IP de secours
+
+Un changement de domaine qui tourne mal — DNS pas encore propagé, certificat non émis — peut rendre l'instance injoignable, y compris pour revenir en arrière. Le champ **IP de secours** évite ça : renseigné, il ajoute un second router Traefik en HTTP simple sur cette IP, servant la même app, en plus du router HTTPS sur le domaine. L'origine correspondante est également ajoutée aux origines de confiance de l'authentification, sans quoi la connexion serait refusée depuis cette adresse.
+
+Le champ n'a d'effet qu'en HTTPS : en mode IP, l'instance est déjà servie sur son adresse. Il correspond à la variable `NEXPLOY_FALLBACK_IP`, posée et retirée automatiquement — voir [Variables d'environnement](/reference/environment-variables).
+
+### En-têtes de sécurité
+
+Le router de l'app Nexploy elle-même passe par un middleware `security-headers` qui pose `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, un `Referrer-Policy` en `strict-origin-when-cross-origin` et, en HTTPS uniquement, un HSTS d'un an avec `includeSubdomains` et `preload`. En mode IP, une variante sans HSTS est appliquée à la place — épingler HSTS sur une adresse IP en bloquerait l'accès en HTTP.
+
+Ces en-têtes protègent l'interface d'administration, pas vos déploiements : les routers générés par dépôt ne les reçoivent pas. Ajoutez-les vous-même dans la configuration Traefik d'un dépôt si vous en avez besoin.
