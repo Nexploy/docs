@@ -3,7 +3,7 @@ title: Introduzione
 description: Nexploy — piattaforma di deployment self-hosted per Docker
 ---
 
-**Nexploy** è una piattaforma di deployment **self-hosted** per Docker. Distribuisce automaticamente le tue applicazioni dai tuoi repository Git (GitHub / GitLab / Gitea / Bitbucket / Azure Repos) verso container Docker, con HTTPS automatico grazie a Traefik.
+**Nexploy** è una piattaforma di deployment **self-hosted** per Docker. Distribuisce automaticamente le tue applicazioni dai tuoi repository Git (GitHub / GitLab / Gitea / Bitbucket / Azure Repos), o da qualsiasi URL di repository pubblico (provider `CUSTOM`) verso container Docker, con HTTPS automatico grazie a Traefik.
 
 <Callout title="Il concetto">
   Vercel o Netlify, ma self-hosted e basato su Docker — mantieni il controllo
@@ -24,7 +24,7 @@ description: Nexploy — piattaforma di deployment self-hosted per Docker
 
 | Funzionalità | Descrizione |
 |---|---|
-| Integrazione Git | Deployment da GitHub, GitLab, Gitea, Bitbucket e Azure Repos |
+| Integrazione Git | Deployment da GitHub, GitLab, Gitea, Bitbucket e Azure Repos, o tramite URL pubblico |
 | Pipeline di build | Grafo di nodi durevole, log in diretta nodo per nodo |
 | Editor visuale di pipeline | Sistema di nodi per creare workflow su misura |
 | Fasi di deployment | Staging, produzione… ognuna con la propria pipeline, le proprie variabili e il proprio host |

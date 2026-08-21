@@ -1,6 +1,6 @@
 ---
 title: Git integration
-description: Connect GitHub, GitLab, Gitea, Bitbucket and Azure Repos, and trigger builds from webhooks
+description: Connect GitHub, GitLab, Gitea, Bitbucket and Azure Repos, add a public repository by URL, and trigger builds from webhooks
 ---
 
 Nexploy connects to your Git accounts to clone your repositories and listen to push events. Providers are configured once per instance from **Administration → Integrations**, then each user connects their own account to it.
@@ -14,6 +14,19 @@ Nexploy connects to your Git accounts to clone your repositories and listen to p
 | **Gitea** | OAuth application | `Client ID`, `Client secret`, and the base URL of your instance |
 | **Bitbucket** | OAuth consumer | The consumer `Key` and `Secret` — Bitbucket Cloud only |
 | **Azure Repos** | Entra ID app registration | `Application ID`, `Client secret value`, and the `Tenant ID` for a single-tenant app |
+| **Custom URL** | None | Nothing — the URL of a public repository is enough |
+
+### Custom URL
+
+A **public** repository can be added with no provider and no connected account. Under **Repositories → Add**, the **Public URL** tab asks for the repository URL, checks it and lists its branches; the repository is stored with the `CUSTOM` provider.
+
+Nexploy reads the remote refs over the Git HTTP protocol (`/info/refs?service=git-upload-pack`): no `git` binary and no forge API are involved. The clone is anonymous — no credential is asked for or stored.
+
+There is no forge API behind this mode, so:
+
+- **no webhook** is registered — builds are triggered manually or on a schedule;
+- **no commit status** is reported and **no release** is created: the `update-commit-status` and `create-release` nodes fail on a `CUSTOM` repository;
+- a private repository is rejected when adding it.
 
 ### GitHub
 

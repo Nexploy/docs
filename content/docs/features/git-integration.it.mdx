@@ -1,6 +1,6 @@
 ---
 title: Integrazione Git
-description: Collegare GitHub, GitLab, Gitea, Bitbucket e Azure Repos, e avviare i build dai webhook
+description: Collegare GitHub, GitLab, Gitea, Bitbucket e Azure Repos, aggiungere un repository pubblico tramite URL, e avviare i build dai webhook
 ---
 
 Nexploy si collega ai tuoi account Git per clonare i tuoi repository e ascoltare gli eventi di push. I provider si configurano una volta per istanza da **Amministrazione → Integrazioni**, poi ogni utente vi collega il proprio account.
@@ -14,6 +14,19 @@ Nexploy si collega ai tuoi account Git per clonare i tuoi repository e ascoltare
 | **Gitea** | Applicazione OAuth | `Client ID`, `Client secret` e l'URL della tua istanza |
 | **Bitbucket** | Consumer OAuth | `Chiave` e `Secret` del consumer — solo Bitbucket Cloud |
 | **Azure Repos** | Registrazione di applicazione Entra ID | `ID applicazione`, `Valore del secret client` e l'`ID tenant` per un'applicazione mono-tenant |
+| **URL personalizzato** | Nessuna | Nulla — basta l'URL di un repository pubblico |
+
+### URL personalizzato
+
+Un repository **pubblico** può essere aggiunto senza provider né account collegato. In **Repository → Aggiungi**, la scheda **URL pubblico** chiede l'URL del repository, lo verifica e ne elenca i rami; il repository viene salvato con il provider `CUSTOM`.
+
+Nexploy legge i riferimenti remoti tramite il protocollo Git su HTTP (`/info/refs?service=git-upload-pack`): nessun binario `git` né API della forge sono coinvolti. Il clone è anonimo, nessuna credenziale viene richiesta o salvata.
+
+Dietro questa modalità non c'è alcuna API della forge, quindi:
+
+- **nessun webhook** viene registrato — i build si avviano manualmente o da una pianificazione;
+- **nessuno stato di commit** viene riportato e **nessuna release** viene creata: i nodi `update-commit-status` e `create-release` falliscono su un repository `CUSTOM`;
+- un repository privato viene rifiutato al momento dell'aggiunta.
 
 ### GitHub
 

@@ -24,7 +24,7 @@ Este cambio solo está disponible para las instancias instaladas mediante `insta
 Este cambio de dirección (IP → dominio, o al revés) modifica la URL base de la instancia. La **URL de redirección (callback URL)** de la aplicación OAuth en el proveedor git sigue apuntando a la dirección antigua y debe actualizarse **manualmente**: ningún proveedor expone una API para cambiarla.
 </Callout>
 
-Los **webhooks**, en cambio, se repropagan automáticamente al guardar, en todos los repositorios que tienen uno: la URL del webhook de la GitHub App se reescribe, los webhooks de GitHub, GitLab y Gitea se modifican in situ, y los de Bitbucket y Azure Repos —cuya API no permite modificarlos— se recrean. El resultado queda registrado en el [registro de actividad](/es/security/activity-log) bajo `admin.propagateInstanceUrl`, con el detalle de los repositorios fallidos.
+Los **webhooks**, en cambio, se repropagan automáticamente al guardar, en todos los repositorios que tienen uno: la URL del webhook de la GitHub App se reescribe, los webhooks de GitHub, GitLab y Gitea se modifican in situ, y los de Bitbucket y Azure Repos —cuya API no permite modificarlos— se recrean. El resultado queda registrado en el [registro de actividad](/es/security/activity-log) bajo `admin.propagateInstanceUrl`, con el detalle de los repositorios fallidos. Los repositorios añadidos por URL pública (`CUSTOM`) no tienen webhook y no se ven afectados.
 
 Tras guardar, **Admin → Ajustes** muestra la lista de URLs que espera cada proveedor configurado — callback OAuth, redirección de instalación, webhook, página de inicio — cada una marcada como «automática» cuando Nexploy se encarga de ella, con un enlace directo a los ajustes de la aplicación en el proveedor.
 

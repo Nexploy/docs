@@ -24,7 +24,7 @@ Cette bascule n'est disponible que pour les instances installées via `install.s
 Ce changement d'adresse (IP → domaine, ou l'inverse) modifie l'URL de base de l'instance. L'**URL de redirection (callback URL)** de votre application OAuth chez le fournisseur git reste pointée vers l'ancienne adresse et doit être mise à jour **manuellement** : aucun fournisseur n'expose d'API pour la changer.
 </Callout>
 
-Les **webhooks**, en revanche, sont repropagés automatiquement à l'enregistrement, sur tous les dépôts qui en ont un : l'URL du webhook de la GitHub App est réécrite, les webhooks GitHub, GitLab et Gitea sont modifiés sur place, et ceux de Bitbucket et Azure Repos — dont l'API ne permet pas la modification — sont recréés. Le résultat est consigné dans le [journal d'activité](/security/activity-log) sous `admin.propagateInstanceUrl`, avec le détail des dépôts en échec.
+Les **webhooks**, en revanche, sont repropagés automatiquement à l'enregistrement, sur tous les dépôts qui en ont un : l'URL du webhook de la GitHub App est réécrite, les webhooks GitHub, GitLab et Gitea sont modifiés sur place, et ceux de Bitbucket et Azure Repos — dont l'API ne permet pas la modification — sont recréés. Le résultat est consigné dans le [journal d'activité](/security/activity-log) sous `admin.propagateInstanceUrl`, avec le détail des dépôts en échec. Les dépôts ajoutés par URL publique (`CUSTOM`) n'ont pas de webhook et ne sont pas concernés.
 
 Après l'enregistrement, **Admin → Paramètres** affiche la liste des URLs attendues par chaque fournisseur configuré — callback OAuth, redirection d'installation, webhook, page d'accueil — chacune marquée « automatique » quand Nexploy s'en charge, avec un lien direct vers les réglages de l'application chez le fournisseur.
 
