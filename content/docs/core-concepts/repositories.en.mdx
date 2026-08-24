@@ -42,3 +42,4 @@ A failed build is not resumed from where it stopped — re-running it replays th
 - Added per stage of a repository, **encrypted at rest**.
 - Injected automatically into `deploy-compose` and `create-container` at deployment time.
 - Never displayed in plain text in the interface after being saved.
+- **Import a `.env` file** from the **Env** tab: drop the file, pick it, or paste its content. Only `.env`-style names such as `.env`, `.env.local`, `.env.production` are accepted, up to 1 MB. Empty lines and comments are ignored, quotes around a value are stripped, and on a duplicate key the last value wins. Entries with an invalid key, an empty value or a value that is too long are skipped and reported.

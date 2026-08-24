@@ -35,3 +35,18 @@ La planification est **par environnement Docker** — chaque hôte a ses propres
 ## Restitution
 
 Après chaque exécution, Nexploy enregistre sa date et l'espace disque récupéré, tous deux affichés dans la carte des paramètres. Une exécution sans aucune catégorie sélectionnée ne fait rien et ne récupère rien.
+
+## Garde-fou d'espace disque
+
+Le prune libère de l'espace une fois par jour ; le **garde-fou d'espace disque** empêche le serveur d'aller au bout du disque entre deux exécutions. Il se règle depuis **Administration → Paramètres**, à côté de la carte de nettoyage.
+
+| Réglage | Défaut | Effet |
+|---|---|---|
+| **Activer le garde-fou** | activé | Sans lui, aucune opération n'est refusée |
+| **Seuil d'alerte (%)** | `80` | Au-dessus, une alerte est enregistrée dans le journal d'activité, sans rien bloquer |
+| **Seuil de blocage (%)** | `90` | Au-dessus, toute opération consommant de l'espace est refusée. Doit être supérieur au seuil d'alerte |
+| **Espace libre minimum (Mo)** | `2048` | En dessous, les opérations sont refusées aussi, quel que soit le pourcentage |
+
+Une fois le seuil de blocage atteint, ces opérations répondent `507` avec le code `DISK_SPACE_LOW` : création, recréation, migration et exécution éphémère de conteneurs, `pull`, `import`, `load` et mise en miroir d'images, création de volume et restauration de cache, restauration de sauvegarde, déploiement et migration de stacks compose, déploiements de pipeline et builds. La lecture, l'arrêt et la suppression restent possibles — de quoi faire de la place.
+
+L'utilisation disque est relue **toutes les dix minutes** : le passage en alerte ou en blocage est enregistré une seule fois dans le [journal d'activité](/security/activity-log) sous `diskGuard.warning` ou `diskGuard.blocking`, et le retour à la normale efface l'alerte. Le disque mesuré est celui du chemin `DISK_GUARD_PATH` — voir [Variables d'environnement](/reference/environment-variables).

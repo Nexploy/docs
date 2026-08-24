@@ -15,3 +15,18 @@ Nexploy offre una dashboard completa per pilotare i tuoi container Docker:
 
   `NEXPLOY_DEBUG=true` rimuove questo mascheramento — vedi [Variabili d'ambiente](/it/reference/environment-variables).
 </Callout>
+
+## Porte pubblicate
+
+Ogni porta pubblicata nella scheda di un container apre un menu **Apri con**:
+
+- **IP dell'host** — `http://ip-del-server:porta`, con l'IP a cui la porta è effettivamente associata quando il container ne prende di mira uno.
+- **Dominio corrente** — il nome host da cui stai consultando Nexploy, proposto quando è diverso dall'IP dell'host e non è già uno dei domini del container.
+- I **domini** del container, sia quelli dichiarati in Nexploy sia quelli letti dalle sue label Traefik.
+
+### Accesso diretto tramite IP
+
+**Amministrazione > Impostazioni > Accesso diretto tramite IP** decide se le porte pubblicate sono raggiungibili dall'esterno del server:
+
+- Attivare **Disattivare l'accesso tramite l'IP del server** associa le porte pubblicate a `127.0.0.1` invece che a tutte le interfacce. I container restano raggiungibili tramite Traefik e i loro domini, ma non più tramite `http://ip-del-server:porta` — il menu **Apri con** mostra allora *accesso IP disattivato*.
+- L'impostazione si applica ai container **creati in seguito**. La scheda elenca i container esistenti che pubblicano ancora le loro porte su tutte le interfacce e propone di ricrearli con il nuovo binding.

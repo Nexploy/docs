@@ -15,3 +15,18 @@ Nexploy provides a complete dashboard to drive your Docker containers:
 
   `NEXPLOY_DEBUG=true` lifts this — see [Environment variables](/en/reference/environment-variables).
 </Callout>
+
+## Published ports
+
+Every published port in a container's card opens an **Open with** menu:
+
+- **Host IP** — `http://server-ip:port`, using the IP the port is actually bound to when the container targets one.
+- **Current domain** — the hostname you are browsing Nexploy from, offered when it differs from the host IP and is not already one of the container's domains.
+- The container's **domains**, both those declared in Nexploy and those read from its Traefik labels.
+
+### Direct IP access
+
+**Administration > Settings > Direct IP access** decides whether published ports are reachable from outside the server:
+
+- Turning on **Disable access through the server IP** binds published ports to `127.0.0.1` instead of every interface. Containers stay reachable through Traefik and their domains, but no longer through `http://server-ip:port` — the **Open with** menu then shows *IP access disabled*.
+- The setting applies to containers **created afterwards**. The card lists the existing containers that still publish their ports on every interface and offers to recreate them with the new binding.

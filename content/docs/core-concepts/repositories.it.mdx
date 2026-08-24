@@ -42,3 +42,4 @@ Un build fallito non viene ripreso dal punto in cui si è fermato — rilanciarl
 - Aggiunte per stage di un repository, **cifrate a riposo**.
 - Iniettate automaticamente in `deploy-compose` e `create-container` al momento del deployment.
 - Mai esposte in chiaro nell'interfaccia dopo il salvataggio.
+- **Importazione di un file `.env`** dalla scheda **Env**: trascina il file, selezionalo o incolla il suo contenuto. Sono accettati solo nomi di tipo `.env`, `.env.local`, `.env.production`, fino a 1 MB. Le righe vuote e i commenti vengono ignorati, le virgolette che racchiudono un valore vengono rimosse e, in caso di chiave duplicata, viene mantenuto l'ultimo valore. Le voci con chiave non valida, valore vuoto o valore troppo lungo vengono scartate e segnalate.

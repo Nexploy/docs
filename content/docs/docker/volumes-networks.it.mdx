@@ -12,6 +12,19 @@ description: Gestire volumi, reti e stack docker-compose
   `NEXPLOY_DEBUG=true` rimuove questo mascheramento — vedi [Variabili d'ambiente](/it/reference/environment-variables).
 </Callout>
 
+## Copia di volumi verso un altro server
+
+Il contenuto di uno o più volumi può essere copiato verso un altro ambiente Docker, dalla tabella **Volumi** o dalle azioni di un container o di uno stack (**Copia i dati del volume**).
+
+- **Ambiente di destinazione**: un altro ambiente Docker dichiarato in Nexploy. Un ambiente protetto rifiuta l'operazione, sia come sorgente sia come destinazione.
+- **Container che usano questi volumi** — tre modalità:
+  - `Arrestare da entrambi i lati`: i container di origine e di destinazione vengono arrestati prima della copia e poi riavviati. Necessario per una copia coerente di un database.
+  - `Arrestare solo la destinazione`: l'origine continua a funzionare, quindi la copia può risultare incoerente.
+  - `Non arrestare nulla`: la copia viene rifiutata se un container sta ancora usando uno di questi volumi.
+- **Sovrascrivere i dati esistenti**: il contenuto del volume di destinazione viene eliminato prima della copia. Senza questa opzione, la copia fallisce se la destinazione non è vuota.
+
+La copia viene eseguita come un'attività in quattro fasi — preparazione dei volumi, arresto dei container, copia dei dati, riavvio dei container — seguita dal pannello delle attività. Vedi [Attività](/it/features/tasks).
+
 ## Docker Compose
 
 - Deployment e validazione di stack docker-compose.

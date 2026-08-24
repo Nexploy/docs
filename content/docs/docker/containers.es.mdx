@@ -15,3 +15,18 @@ Nexploy ofrece un panel completo para pilotar tus contenedores Docker:
 
   `NEXPLOY_DEBUG=true` levanta esta ocultación — ver [Variables de entorno](/es/reference/environment-variables).
 </Callout>
+
+## Puertos publicados
+
+Cada puerto publicado en la ficha de un contenedor abre un menú **Abrir con**:
+
+- **IP del host** — `http://ip-del-servidor:puerto`, con la IP a la que el puerto está realmente vinculado cuando el contenedor apunta a una.
+- **Dominio actual** — el nombre de host desde el que consultas Nexploy, propuesto cuando difiere de la IP del host y no es ya uno de los dominios del contenedor.
+- Los **dominios** del contenedor, tanto los declarados en Nexploy como los leídos de sus labels de Traefik.
+
+### Acceso directo por IP
+
+**Administración > Ajustes > Acceso directo por IP** decide si los puertos publicados son accesibles desde fuera del servidor:
+
+- Activar **Desactivar el acceso por la IP del servidor** vincula los puertos publicados a `127.0.0.1` en lugar de a todas las interfaces. Los contenedores siguen siendo accesibles a través de Traefik y de sus dominios, pero ya no por `http://ip-del-servidor:puerto` — el menú **Abrir con** muestra entonces *acceso IP desactivado*.
+- El ajuste se aplica a los contenedores **creados después**. La tarjeta lista los contenedores existentes que todavía publican sus puertos en todas las interfaces y propone recrearlos con la nueva vinculación.

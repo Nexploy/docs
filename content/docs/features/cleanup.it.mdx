@@ -35,3 +35,18 @@ La pianificazione è **per ambiente Docker** — ogni host ha le proprie imposta
 ## Resoconto
 
 Dopo ogni esecuzione, Nexploy registra la data e lo spazio disco recuperato, entrambi mostrati nella scheda delle impostazioni. Un'esecuzione senza alcuna categoria selezionata non fa nulla e non recupera nulla.
+
+## Guardia dello spazio su disco
+
+Il prune libera spazio una volta al giorno; la **guardia dello spazio su disco** impedisce al server di riempire il disco tra due esecuzioni. Si configura da **Amministrazione → Impostazioni**, accanto alla scheda di pulizia.
+
+| Impostazione | Predefinito | Effetto |
+|---|---|---|
+| **Attivare la guardia** | attiva | Senza di essa nessuna operazione viene rifiutata |
+| **Soglia di avviso (%)** | `80` | Oltre questa soglia viene registrato un avviso nel registro attività, senza bloccare nulla |
+| **Soglia di blocco (%)** | `90` | Oltre questa soglia ogni operazione che consuma spazio viene rifiutata. Deve essere superiore alla soglia di avviso |
+| **Spazio libero minimo (MB)** | `2048` | Al di sotto le operazioni vengono rifiutate comunque, qualunque sia la percentuale |
+
+Raggiunta la soglia di blocco, queste operazioni rispondono `507` con il codice `DISK_SPACE_LOW`: creazione, ricreazione, migrazione ed esecuzione effimera di container, `pull`, `import`, `load` e mirroring di immagini, creazione di volume e ripristino della cache, ripristino di backup, deployment e migrazione di stack compose, deployment di pipeline e build. Lettura, arresto ed eliminazione restano possibili — quanto basta per fare spazio.
+
+L'uso del disco viene riletto **ogni dieci minuti**: il passaggio ad avviso o a blocco viene registrato una sola volta nel [registro attività](/it/security/activity-log) sotto `diskGuard.warning` o `diskGuard.blocking`, e il ritorno alla normalità cancella l'avviso. Il disco misurato è quello del percorso `DISK_GUARD_PATH` — vedi [Variabili d'ambiente](/it/reference/environment-variables).

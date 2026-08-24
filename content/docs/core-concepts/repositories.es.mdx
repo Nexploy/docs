@@ -42,3 +42,4 @@ Un build fallido no se reanuda donde se detuvo — relanzarlo vuelve a ejecutar 
 - Añadidas por stage de un repositorio, **cifradas en reposo**.
 - Inyectadas automáticamente en `deploy-compose` y `create-container` en el momento del despliegue.
 - Nunca expuestas en claro en la interfaz después de guardarlas.
+- **Importación de un archivo `.env`** desde la pestaña **Env**: suelta el archivo, elígelo o pega su contenido. Solo se aceptan nombres de tipo `.env`, `.env.local`, `.env.production`, hasta 1 MB. Las líneas vacías y los comentarios se ignoran, las comillas que rodean un valor se eliminan y, si una clave está duplicada, se conserva el último valor. Las entradas con clave inválida, valor vacío o valor demasiado largo se descartan y se señalan.

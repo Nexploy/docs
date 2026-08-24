@@ -35,3 +35,18 @@ The schedule is **per Docker environment** — each host has its own settings an
 ## Reporting
 
 After each run, Nexploy records when it ran and how much disk space was reclaimed, both shown in the settings card. A run where no category is selected does nothing and reclaims nothing.
+
+## Disk space guard
+
+The prune reclaims space once a day; the **disk space guard** keeps the server from filling its disk between two runs. It is configured from **Administration → Settings**, next to the cleanup card.
+
+| Setting | Default | Effect |
+|---|---|---|
+| **Enable the disk guard** | on | Without it, no operation is ever refused |
+| **Warning threshold (%)** | `80` | Above it, an alert is recorded in the activity log, without blocking anything |
+| **Blocking threshold (%)** | `90` | Above it, every space-consuming operation is refused. Must be higher than the warning threshold |
+| **Minimum free space (MB)** | `2048` | Below it, operations are refused too, whatever the percentage |
+
+Once the blocking threshold is reached, these operations answer `507` with the code `DISK_SPACE_LOW`: container create, recreate, migrate and ephemeral run, image `pull`, `import`, `load` and mirror, volume create and cache restore, backup restore, compose stack deploy and migrate, pipeline deployments and builds. Reading, stopping and deleting still work — enough to make room.
+
+Disk usage is read again **every ten minutes**: moving into warning or blocking is recorded once in the [activity log](/en/security/activity-log) under `diskGuard.warning` or `diskGuard.blocking`, and going back to normal clears the alert. The disk measured is the one holding the `DISK_GUARD_PATH` path — see [Environment variables](/en/reference/environment-variables).

@@ -26,6 +26,11 @@ Clone un second dépôt Git, différent du dépôt principal lié au repository 
 - **Configuration** : `repoUrl` (URL HTTP(S)), `branch`, `targetDir` (sous-dossier relatif où cloner), `token` (optionnel, pour un dépôt privé).
 - **Sorties** : `repoUrl`, `branch`, `targetDir`.
 
+### `resolve-latest-tag`
+Lit les tags d'un dépôt distant et résout le plus récent correspondant à un motif. Utile pour déployer la dernière release plutôt que la branche par défaut.
+- **Configuration** : `repoUrl` (URL du dépôt distant), `pattern` (motif de tag, défaut `v*`), `excludePrereleases` (ignore les préversions, activé par défaut).
+- **Sorties** : `tag`, `commitHash`.
+
 ## Git (opérations sur le dépôt)
 
 ### `git-tag`
@@ -179,6 +184,14 @@ Exécute une commande shell à l'intérieur d'un conteneur en cours d'exécution
 - **Configuration** : `containerId`, `command`, `workdir` (chemin absolu dans le conteneur, défaut `/app`), `user`, `continueOnError` (ne fait pas échouer le pipeline si la commande retourne un code non nul).
 - **Entrées** : `containerId`.
 - **Sorties** : `exitCode`.
+
+## Scripts
+
+### `run-script`
+Exécute une commande shell dans le dépôt cloné. Utile pour les scripts de préparation livrés avec un projet, par exemple générer un fichier `.env` avant le déploiement.
+- **Configuration** : `command`, `workingDirectory` (chemin relatif dans le dépôt, optionnel), `timeoutSeconds` (défaut `600`, maximum `3600`), `continueOnError` (ne fait pas échouer le pipeline si la commande retourne un code non nul).
+- **Entrées** : `workDir`.
+- **Sorties** : `stdout`, `exitCode`.
 
 ## Réseaux & volumes Docker
 

@@ -42,3 +42,4 @@ Un build échoué n'est pas repris là où il s'est arrêté — le relancer rej
 - Ajoutées par stage d'un dépôt, **chiffrées au repos**.
 - Injectées automatiquement dans `deploy-compose` et `create-container` au moment du déploiement.
 - Jamais exposées en clair dans l'interface après enregistrement.
+- **Import d'un fichier `.env`** depuis l'onglet **Env** : déposez le fichier, choisissez-le ou collez son contenu. Seuls les noms de type `.env`, `.env.local`, `.env.production` sont acceptés, jusqu'à 1 Mo. Les lignes vides et les commentaires sont ignorés, les guillemets entourant une valeur sont retirés, et en cas de clé dupliquée la dernière valeur est conservée. Les entrées à clé invalide, à valeur vide ou trop longue sont écartées et signalées.

@@ -12,6 +12,19 @@ description: Gestionar volúmenes, redes y stacks de docker-compose
   `NEXPLOY_DEBUG=true` levanta esta ocultación — ver [Variables de entorno](/es/reference/environment-variables).
 </Callout>
 
+## Copia de volúmenes a otro servidor
+
+El contenido de uno o varios volúmenes puede copiarse a otro entorno Docker, desde la tabla **Volúmenes** o desde las acciones de un contenedor o de una stack (**Copiar los datos del volumen**).
+
+- **Entorno de destino**: otro entorno Docker declarado en Nexploy. Un entorno protegido rechaza la operación, tanto en el origen como en el destino.
+- **Contenedores que usan estos volúmenes** — tres modos:
+  - `Detener en ambos lados`: los contenedores de origen y de destino se detienen antes de la copia y luego se reinician. Necesario para una copia coherente de una base de datos.
+  - `Detener solo el destino`: el origen sigue en marcha, por lo que la copia puede ser incoherente.
+  - `No detener nada`: la copia se rechaza si un contenedor sigue usando uno de esos volúmenes.
+- **Sobrescribir los datos existentes**: el contenido del volumen de destino se elimina antes de la copia. Sin esta opción, la copia falla si el destino no está vacío.
+
+La copia se ejecuta como una tarea en cuatro etapas — preparación de los volúmenes, parada de los contenedores, copia de los datos, reinicio de los contenedores — que se sigue desde el panel de tareas. Ver [Tareas](/es/features/tasks).
+
 ## Docker Compose
 
 - Despliegue y validación de stacks de docker-compose.

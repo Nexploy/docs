@@ -26,6 +26,11 @@ Clona un secondo repository Git, diverso dal repository principale collegato. Ut
 - **Configurazione**: `repoUrl` (URL HTTP(S)), `branch`, `targetDir` (sottocartella relativa in cui clonare), `token` (facoltativo, per un repository privato).
 - **Uscite**: `repoUrl`, `branch`, `targetDir`.
 
+### `resolve-latest-tag`
+Legge i tag di un repository remoto e risolve il più recente che corrisponde a un pattern. Utile per distribuire l'ultima release invece del branch predefinito.
+- **Configurazione**: `repoUrl` (URL del repository remoto), `pattern` (pattern del tag, predefinito `v*`), `excludePrereleases` (ignora le prerelease, attivo per impostazione predefinita).
+- **Uscite**: `tag`, `commitHash`.
+
 ## Git (operazioni sul repository)
 
 ### `git-tag`
@@ -179,6 +184,14 @@ Esegue un comando shell all'interno di un container in esecuzione (tramite `dock
 - **Configurazione**: `containerId`, `command`, `workdir` (percorso assoluto nel container, predefinito `/app`), `user`, `continueOnError` (non fa fallire la pipeline se il comando restituisce un codice diverso da zero).
 - **Ingressi**: `containerId`.
 - **Uscite**: `exitCode`.
+
+## Scripts
+
+### `run-script`
+Esegue un comando shell all'interno del repository clonato. Utile per gli script di preparazione forniti con un progetto, per esempio generare un file `.env` prima del deployment.
+- **Configurazione**: `command`, `workingDirectory` (percorso relativo nel repository, opzionale), `timeoutSeconds` (predefinito `600`, massimo `3600`), `continueOnError` (non fa fallire la pipeline se il comando restituisce un codice diverso da zero).
+- **Ingressi**: `workDir`.
+- **Uscite**: `stdout`, `exitCode`.
 
 ## Reti e volumi Docker
 

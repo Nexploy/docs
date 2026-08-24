@@ -26,6 +26,11 @@ Clones a second Git repository, different from the main repository linked to the
 - **Configuration**: `repoUrl` (HTTP(S) URL), `branch`, `targetDir` (relative subfolder to clone into), `token` (optional, for a private repo).
 - **Outputs**: `repoUrl`, `branch`, `targetDir`.
 
+### `resolve-latest-tag`
+Reads the tags of a remote repository and resolves the newest one matching a pattern. Use it to deploy the latest release instead of the default branch.
+- **Configuration**: `repoUrl` (remote repository URL), `pattern` (tag pattern, default `v*`), `excludePrereleases` (skips pre-releases, on by default).
+- **Outputs**: `tag`, `commitHash`.
+
 ## Git (repository operations)
 
 ### `git-tag`
@@ -179,6 +184,14 @@ Runs a shell command inside a running container (via `docker exec`).
 - **Configuration**: `containerId`, `command`, `workdir` (absolute path inside the container, default `/app`), `user`, `continueOnError` (don't fail the pipeline if the command returns a non-zero exit code).
 - **Inputs**: `containerId`.
 - **Outputs**: `exitCode`.
+
+## Scripts
+
+### `run-script`
+Runs a shell command inside the cloned repository. Use it for the setup scripts a project ships with, such as generating an `.env` file before deploying.
+- **Configuration**: `command`, `workingDirectory` (relative path inside the repository, optional), `timeoutSeconds` (default `600`, maximum `3600`), `continueOnError` (does not fail the pipeline when the command returns a non-zero code).
+- **Inputs**: `workDir`.
+- **Outputs**: `stdout`, `exitCode`.
 
 ## Docker networks & volumes
 

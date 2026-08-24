@@ -48,6 +48,7 @@ Soltanto `nexploy-cli` (lo strumento di recovery, distinto dall'applicazione) pe
 | `LOG_LEVEL` | Livello di log |
 | `NEXPLOY_DEBUG` | `true` espone le risorse di infrastruttura di Nexploy e rimuove tutte le protezioni associate — **pericoloso**, vedi l'avviso in fondo alla pagina. Impostala anche in `apps/nexploy/.env` |
 | `DOCKER_SOCKET` | Percorso del socket Docker da pilotare (predefinito `/var/run/docker.sock`). Su Colima o Docker Desktop macOS, puntalo al socket reale (`~/.colima/default/docker.sock`, `~/.docker/run/docker.sock`) |
+| `DISK_GUARD_PATH` | Percorso il cui spazio su disco è sorvegliato dalla guardia (predefinito `DEPLOYER_WORK_DIR`, altrimenti `/tmp/deployer`) — vedi [Pulizia automatica](/it/features/cleanup) |
 | `NEXPLOY_API_URL` | URL dell'app nexploy, per richiamare l'app |
 | `NEXPLOY_API_KEY` | Chiave inviata all'app nexploy per autenticarsi (caricamento degli ambienti, sincronizzazione delle eliminazioni) — stesso valore di `NEXPLOY_API_KEY` lato nexploy. Se assente, `docker-api` la recupera alla prima chiamata tramite `GET /api/internal/docker-api-key` (autenticato da `ENCRYPTION_KEY`) e la tiene in memoria — è ciò che fanno le immagini Docker, in tal caso non impostarla manualmente |
 | `ENCRYPTION_KEY` | Stesso valore del lato `apps/nexploy/.env` — inviato come `x-internal-secret` per recuperare `NEXPLOY_API_KEY` e far verificare a nexploy le chiavi API ricevute |
